@@ -174,17 +174,18 @@ export function InlineProjectPage({ project: initialProject, tags }: InlineProje
         </BentoCard>
 
         {/* Where I Left Off - Primary focus area */}
-        <BentoCard className="lg:col-span-7 xl:col-span-8" highlight delay={100}>
+        <BentoCard className="lg:col-span-7 xl:col-span-8 flex flex-col" highlight delay={100}>
           <CardHeader icon={MapPin} iconColor="text-amber">
             Where I Left Off
           </CardHeader>
-          <div className="mt-3">
+          <div className="mt-3 flex-1">
             <EditableTextarea
               value={project.where_i_left_off || ""}
               onSave={(value) => updateField("where_i_left_off", value)}
               placeholder="What were you working on? What's the next step?"
               emptyStateMessage="Click to add notes about where you left off..."
               minRows={4}
+              className="h-full"
             />
           </div>
         </BentoCard>
