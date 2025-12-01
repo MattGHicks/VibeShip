@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Project, ProjectStatus, User } from "@/types/database";
 import { TagDisplay } from "@/components/projects/tag-selector";
+import { ProjectPlaceholder } from "@/components/projects/project-placeholder";
 import type { TagType } from "@/lib/actions/tags";
 
 const statusConfig: Record<ProjectStatus, { label: string; icon: React.ElementType; color: string }> = {
@@ -164,81 +165,91 @@ export default async function DiscoverPage({
             const config = statusConfig[project.status];
             const Icon = config.icon;
             return (
-              <Card key={project.id} className="overflow-hidden group">
-                {project.screenshot_url && (
-                  <div className="relative aspect-video w-full bg-muted">
-                    <Image
-                      src={project.screenshot_url}
-                      alt={`${project.name} screenshot`}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                )}
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-lg line-clamp-1">{project.name}</CardTitle>
-                    <Badge variant="secondary" className={config.color}>
-                      <Icon className="mr-1 h-3 w-3" />
-                      {config.label}
-                    </Badge>
-                  </div>
-                  <CardDescription className="line-clamp-2">
-                    {project.description || "No description"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {project.tags.length > 0 && (
-                    <TagDisplay tags={project.tags} size="sm" />
+              <Card key={project.id} className="h-full flex flex-col overflow-hidden group py-0 gap-0">
+                <Link href={`/${project.users.username}/${project.slug}`} className="flex-1">
+                  {project.screenshot_url ? (
+                    <div className="relative aspect-video w-full bg-muted">
+                      <Image
+                        src={project.screenshot_url}
+                        alt={`${project.name} screenshot`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ) : (
+                    <ProjectPlaceholder />
                   )}
-
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    {project.github_repo_url && (
-                      <a
-                        href={project.github_repo_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 hover:text-primary"
-                      >
-                        <Github className="h-4 w-4" />
-                        <span>GitHub</span>
-                      </a>
+                  <CardHeader className="px-4 py-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                        {project.name}
+                      </CardTitle>
+                      <Badge variant="secondary" className={config.color}>
+                        <Icon className="mr-1 h-3 w-3" />
+                        {config.label}
+                      </Badge>
+                    </div>
+                    <CardDescription className="line-clamp-2">
+                      {project.description || "No description"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="px-4 pt-0 pb-4 space-y-4">
+                    {project.tags.length > 0 && (
+                      <TagDisplay tags={project.tags} size="sm" />
                     )}
-                    {project.live_url && (
-                      <a
-                        href={project.live_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 hover:text-primary"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        <span>Live</span>
-                      </a>
-                    )}
-                    {project.github_stars > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4" />
-                        <span>{project.github_stars}</span>
-                      </div>
-                    )}
+                  </CardContent>
+                </Link>
+                {/* Footer with creator and links */}
+                <CardFooter className="border-t bg-muted/30 px-4 py-4 mt-auto">
+                  <div className="flex flex-col gap-4 w-full">
+                    {/* Creator info */}
+                    <Link
+                      href={`/${project.users.username}`}
+                      className="flex items-center gap-2.5 hover:text-primary transition-colors group/creator"
+                    >
+                      <Avatar className="h-7 w-7 ring-2 ring-background">
+                        <AvatarImage src={project.users.avatar_url || undefined} />
+                        <AvatarFallback className="text-xs font-medium">
+                          {(project.users.display_name || project.users.username).charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium group-hover/creator:underline">
+                        {project.users.display_name || project.users.username}
+                      </span>
+                    </Link>
+                    {/* Links and stats row */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {project.github_stars > 0 && (
+                        <div className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                          <Star className="h-4 w-4" />
+                          <span>{project.github_stars} stars</span>
+                        </div>
+                      )}
+                      {project.github_repo_url && (
+                        <a
+                          href={project.github_repo_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                        >
+                          <Github className="h-4 w-4" />
+                          <span>GitHub</span>
+                        </a>
+                      )}
+                      {project.live_url && (
+                        <a
+                          href={project.live_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          <span>Live Site</span>
+                        </a>
+                      )}
+                    </div>
                   </div>
-
-                  {/* Creator Info */}
-                  <Link
-                    href={`/${project.users.username}`}
-                    className="flex items-center gap-2 pt-2 border-t border-border hover:text-primary transition-colors"
-                  >
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={project.users.avatar_url || undefined} />
-                      <AvatarFallback className="text-xs">
-                        {(project.users.display_name || project.users.username).charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm">
-                      {project.users.display_name || project.users.username}
-                    </span>
-                  </Link>
-                </CardContent>
+                </CardFooter>
               </Card>
             );
           })}

@@ -9,7 +9,7 @@ import { DeleteProjectButton } from "@/components/projects/delete-project-button
 import { GitHubSyncButton } from "@/components/projects/github-sync-button";
 import { AutoSync } from "@/components/projects/auto-sync";
 import { TagDisplay } from "@/components/projects/tag-selector";
-import { Github, ExternalLink, Pencil, Globe, Lock, Calendar, Clock, Star } from "lucide-react";
+import { Github, ExternalLink, Pencil, Compass, EyeOff, Calendar, Clock, Star, Globe } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { TagType } from "@/lib/actions/tags";
@@ -65,16 +65,19 @@ export default async function ProjectPage({
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
-            <Badge variant="outline" className="ml-2">
+            <Badge
+              variant="outline"
+              className={project.is_public ? "ml-2 border-green-500/50 text-green-600 dark:text-green-400" : "ml-2"}
+            >
               {project.is_public ? (
                 <>
-                  <Globe className="mr-1 h-3 w-3" />
-                  Public
+                  <Compass className="mr-1 h-3 w-3" />
+                  Discoverable
                 </>
               ) : (
                 <>
-                  <Lock className="mr-1 h-3 w-3" />
-                  Private
+                  <EyeOff className="mr-1 h-3 w-3" />
+                  Hidden
                 </>
               )}
             </Badge>
