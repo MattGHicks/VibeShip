@@ -3,7 +3,6 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Upload, X, Loader2, ImageIcon } from "lucide-react";
 import { uploadScreenshot, deleteScreenshot } from "@/lib/actions/screenshots";
 
@@ -105,8 +104,6 @@ export function ScreenshotUpload({ projectId, currentUrl, onUpload }: Screenshot
 
   return (
     <div className="space-y-2">
-      <Label>Screenshot</Label>
-
       {error && (
         <div className="rounded-lg bg-destructive/10 p-3 text-destructive text-sm">
           {error}
@@ -159,18 +156,18 @@ export function ScreenshotUpload({ projectId, currentUrl, onUpload }: Screenshot
             disabled={isUploading}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
-          <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+          <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
             {isUploading ? (
-              <Loader2 className="h-10 w-10 animate-spin text-muted-foreground mb-3" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
             ) : (
-              <div className="rounded-full bg-muted p-3 mb-3">
-                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+              <div className="rounded-full bg-muted/50 p-2.5 mb-2">
+                <ImageIcon className="h-5 w-5 text-muted-foreground" />
               </div>
             )}
-            <p className="text-sm font-medium">
-              {isUploading ? "Uploading..." : "Drop an image here or click to upload"}
+            <p className="text-sm font-medium text-muted-foreground">
+              {isUploading ? "Uploading..." : "Drop an image or click to upload"}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground/70 mt-0.5">
               JPEG, PNG, GIF, or WebP up to 5MB
             </p>
           </div>

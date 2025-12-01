@@ -48,11 +48,6 @@ const navItems = [
     icon: FolderKanban,
   },
   {
-    title: "Import from GitHub",
-    url: "/import",
-    icon: Github,
-  },
-  {
     title: "Discover",
     url: "/discover",
     icon: Compass,
@@ -143,6 +138,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
                   <Link href="/projects/new">
                     <Plus className="h-4 w-4" />
                     <span>New Project</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/import" || pathname.startsWith("/import/")}>
+                  <Link href="/import">
+                    <Github className="h-4 w-4" />
+                    <span>Import from GitHub</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -68,12 +68,17 @@ export interface Database {
           github_repo_url: string | null;
           github_repo_id: number | null;
           github_stars: number;
+          github_forks: number;
+          github_open_issues: number;
+          github_language: string | null;
+          github_autosync: boolean;
           live_url: string | null;
           screenshot_url: string | null;
           where_i_left_off: string | null;
           lessons_learned: string | null;
           last_activity_at: string;
           github_synced_at: string | null;
+          api_key: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -88,12 +93,17 @@ export interface Database {
           github_repo_url?: string | null;
           github_repo_id?: number | null;
           github_stars?: number;
+          github_forks?: number;
+          github_open_issues?: number;
+          github_language?: string | null;
+          github_autosync?: boolean;
           live_url?: string | null;
           screenshot_url?: string | null;
           where_i_left_off?: string | null;
           lessons_learned?: string | null;
           last_activity_at?: string;
           github_synced_at?: string | null;
+          api_key?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -108,14 +118,48 @@ export interface Database {
           github_repo_url?: string | null;
           github_repo_id?: number | null;
           github_stars?: number;
+          github_forks?: number;
+          github_open_issues?: number;
+          github_language?: string | null;
+          github_autosync?: boolean;
           live_url?: string | null;
           screenshot_url?: string | null;
           where_i_left_off?: string | null;
           lessons_learned?: string | null;
           last_activity_at?: string;
           github_synced_at?: string | null;
+          api_key?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      api_activity_log: {
+        Row: {
+          id: string;
+          project_id: string;
+          action: string;
+          details: Json | null;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          action: string;
+          details?: Json | null;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          action?: string;
+          details?: Json | null;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
         };
       };
       project_tags: {
@@ -223,3 +267,6 @@ export type ProjectStatus = Project["status"];
 
 export type ProjectTag = Database["public"]["Tables"]["project_tags"]["Row"];
 export type TagCatalog = Database["public"]["Tables"]["tags_catalog"]["Row"];
+
+export type ApiActivityLog = Database["public"]["Tables"]["api_activity_log"]["Row"];
+export type ApiActivityLogInsert = Database["public"]["Tables"]["api_activity_log"]["Insert"];

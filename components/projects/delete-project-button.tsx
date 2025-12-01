@@ -37,10 +37,13 @@ export function DeleteProjectButton({ projectId, projectName }: DeleteProjectBut
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="destructive" className="w-full">
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete Project
-        </Button>
+        <button
+          type="button"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Delete project
+        </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

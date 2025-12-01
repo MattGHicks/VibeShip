@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { RefreshCw, Check, AlertCircle } from "lucide-react";
 import { syncGitHubProject } from "@/lib/actions/github";
 
@@ -60,47 +59,46 @@ export function GitHubSyncButton({ projectId, lastSyncedAt }: GitHubSyncButtonPr
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleSync}
-        disabled={isSyncing}
-        className={
-          syncStatus === "success"
-            ? "border-green-500 text-green-500"
-            : syncStatus === "error"
-            ? "border-destructive text-destructive"
-            : ""
-        }
-      >
-        {isSyncing ? (
-          <>
-            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-            Syncing...
-          </>
-        ) : syncStatus === "success" ? (
-          <>
-            <Check className="mr-2 h-4 w-4" />
-            Synced!
-          </>
-        ) : syncStatus === "error" ? (
-          <>
-            <AlertCircle className="mr-2 h-4 w-4" />
-            Failed
-          </>
-        ) : (
-          <>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Sync with GitHub
-          </>
-        )}
-      </Button>
-
-      <p className="text-xs text-muted-foreground">
-        Last synced: {formatLastSynced(lastSyncedAt)}
-      </p>
-
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">
+          {formatLastSynced(lastSyncedAt)}
+        </span>
+        <button
+          type="button"
+          onClick={handleSync}
+          disabled={isSyncing}
+          className={`flex items-center gap-1 text-xs transition-colors ${
+            syncStatus === "success"
+              ? "text-emerald-500"
+              : syncStatus === "error"
+              ? "text-destructive"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {isSyncing ? (
+            <>
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              <span>Syncing</span>
+            </>
+          ) : syncStatus === "success" ? (
+            <>
+              <Check className="h-3 w-3" />
+              <span>Synced</span>
+            </>
+          ) : syncStatus === "error" ? (
+            <>
+              <AlertCircle className="h-3 w-3" />
+              <span>Failed</span>
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-3 w-3" />
+              <span>Sync</span>
+            </>
+          )}
+        </button>
+      </div>
       {errorMessage && (
         <p className="text-xs text-destructive">{errorMessage}</p>
       )}

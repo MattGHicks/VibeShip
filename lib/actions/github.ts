@@ -11,6 +11,8 @@ interface GitHubRepo {
   html_url: string;
   homepage: string | null;
   stargazers_count: number;
+  forks_count: number;
+  open_issues_count: number;
   language: string | null;
   updated_at: string;
   private: boolean;
@@ -162,6 +164,9 @@ export async function syncGitHubProject(projectId: string) {
       .from("projects")
       .update({
         github_stars: repo.stargazers_count,
+        github_forks: repo.forks_count,
+        github_open_issues: repo.open_issues_count,
+        github_language: repo.language,
         description: repo.description || undefined,
         live_url: repo.homepage || undefined,
         github_synced_at: new Date().toISOString(),
@@ -180,6 +185,9 @@ export async function syncGitHubProject(projectId: string) {
       success: true,
       data: {
         stars: repo.stargazers_count,
+        forks: repo.forks_count,
+        openIssues: repo.open_issues_count,
+        language: repo.language,
         description: repo.description,
         homepage: repo.homepage,
       }
@@ -187,6 +195,31 @@ export async function syncGitHubProject(projectId: string) {
   } catch {
     return { error: "Failed to sync with GitHub. Please try again." };
   }
+}
+
+export async function toggleGitHubAutosync(projectId: string, enabled: boolean) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .update({ github_autosync: enabled })
+    .eq("id", projectId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/projects/${projectId}`);
+  return { success: true };
 }
 
 export async function importGitHubRepo(repoId: number) {
@@ -271,6 +304,10 @@ export async function importGitHubRepo(repoId: number) {
         github_repo_url: repo.html_url,
         github_repo_id: repo.id,
         github_stars: repo.stargazers_count,
+        github_forks: repo.forks_count,
+        github_open_issues: repo.open_issues_count,
+        github_language: repo.language,
+        github_autosync: true,
         live_url: repo.homepage || null,
         github_synced_at: new Date().toISOString(),
       })
