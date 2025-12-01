@@ -151,11 +151,18 @@ ${secrets}
 EOF
 
 chmod 600 .vibe/.secrets
+
+# 3. Add VibeShip context to AI config files (so future sessions auto-discover)
+# Claude Code
+grep -q "vibe/vibeship.md" CLAUDE.md 2>/dev/null || echo -e "\\n## VibeShip Context\\nRead .vibe/vibeship.md for project context. Source .vibe/.secrets for API credentials." >> CLAUDE.md
+
+# Cursor
+grep -q "vibe/vibeship.md" .cursorrules 2>/dev/null || echo -e "\\n# VibeShip\\nAlways read .vibe/vibeship.md for project context before starting work." >> .cursorrules
 \`\`\`
 
 ---
 
-After creating files: **"Created .vibe/ folder. vibeship.md can be committed - .secrets is gitignored."**
+After creating files: **"Created .vibe/ folder and updated AI configs. Future AI sessions will auto-discover context."**
 
 ${needsSetup ? `Then run the **Initial Setup** from the fetched instructions to populate project context.` : `Then read .vibe/vibeship.md and ask what to work on today.`}`;
 }

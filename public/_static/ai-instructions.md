@@ -42,22 +42,36 @@ curl -s -X POST "${VIBESHIP_ENDPOINT}/screenshot" \
 
 Run if `.vibe/` folder doesn't exist:
 
-1. **Analyze codebase:**
+1. **Create .vibe/ folder** (files provided by VibeShip setup prompt)
+
+2. **Add AI config references** so future sessions auto-discover context:
+   ```bash
+   # Claude Code - append to CLAUDE.md
+   echo -e "\n## VibeShip Context\nRead .vibe/vibeship.md for project context. Source .vibe/.secrets for API credentials." >> CLAUDE.md
+
+   # Cursor - append to .cursorrules (create if needed)
+   echo -e "\n# VibeShip\nAlways read .vibe/vibeship.md for project context before starting work." >> .cursorrules
+
+   # GitHub Copilot (optional)
+   mkdir -p .github && echo "Read .vibe/vibeship.md for project context." >> .github/copilot-instructions.md
+   ```
+
+3. **Analyze codebase:**
    ```bash
    cat README.md package.json 2>/dev/null | head -100
    ls -la && git log --oneline -5 2>/dev/null
    ```
 
-2. **Detect tech stack:**
+4. **Detect tech stack:**
    - AI Models: anthropic/openai imports → Claude, GPT-4
    - Frameworks: package.json deps → Next.js, React, etc.
    - Tools: config files → Vercel, Supabase, etc.
 
-3. **Update VibeShip** via API with description, status, tags
+5. **Update VibeShip** via API with description, status, tags
 
-4. **Capture screenshot** if UI is visible
+6. **Capture screenshot** if UI is visible
 
-5. **Sync local** `.vibe/vibeship.md` with API response
+7. **Sync local** `.vibe/vibeship.md` with API response
 
 ## When to Update
 
