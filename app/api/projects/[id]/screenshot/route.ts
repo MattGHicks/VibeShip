@@ -116,11 +116,13 @@ export async function POST(
   }
 
   // Check for existing screenshot and delete it first
-  const { data: existingProject } = await supabase
+  const { data: existingProjectData } = await supabase
     .from("projects")
     .select("screenshot_url")
     .eq("id", id)
     .single();
+
+  const existingProject = existingProjectData as { screenshot_url: string | null } | null;
 
   if (existingProject?.screenshot_url) {
     // Extract the storage path from the public URL
