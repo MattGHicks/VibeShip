@@ -25,7 +25,7 @@ export function generateBootstrapPrompt(options: {
 
   return `# VibeShip: ${projectName}
 
-Fetch instructions: ${baseUrl}/api/ai-instructions
+Fetch instructions: ${baseUrl}/ai-instructions.md
 Then read \`.vibe/vibeship.md\` for project context.
 Source \`.vibe/.secrets\` for API credentials.`;
 }
