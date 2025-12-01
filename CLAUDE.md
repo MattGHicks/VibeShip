@@ -20,6 +20,37 @@ VibeShip is a web platform for solo vibe coders to track, organize, and share th
 | Database | Supabase (PostgreSQL) | Also handles Auth |
 | Auth | Supabase Auth | GitHub OAuth |
 | Fonts | Geist Sans & Geist Mono | Google Fonts |
+| Hosting | Vercel | Auto-deploy on push |
+| Repo | GitHub | CI/CD trigger |
+
+---
+
+## URLs
+
+| Environment | URL |
+|-------------|-----|
+| **Production** | https://vibe-ship.vercel.app |
+| **GitHub Repo** | https://github.com/MattGHicks/VibeShip |
+| **Local Dev** | http://localhost:3000 |
+
+---
+
+## Deployment Workflow
+
+```
+Local Development → Git Push → GitHub → Vercel Auto-Deploy → Production
+```
+
+### How it works:
+1. Develop locally at `localhost:3000`
+2. Commit changes: `git add . && git commit -m "message"`
+3. Push to GitHub: `git push`
+4. Vercel automatically detects the push and rebuilds
+5. Changes go live at `vibe-ship.vercel.app` within ~1 minute
+
+### Preview Deployments:
+- Every PR gets its own preview URL
+- Format: `vibeship-{hash}-mattghicks-projects.vercel.app`
 
 ---
 
