@@ -2,11 +2,13 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import type { Database, Project, ProjectTag, ApiActivityLogInsert } from "@/types/database";
 
-// Service role client for API access (bypasses RLS)
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Create client lazily to avoid build-time errors
+function getSupabase() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // Fields that AI can update
 const ALLOWED_UPDATE_FIELDS = [
@@ -28,6 +30,7 @@ async function validateApiKey(
 
   const apiKey = authHeader.replace("Bearer ", "");
 
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("projects")
     .select("id, api_key")
@@ -65,6 +68,7 @@ async function logActivity(
   };
 
   // Use type assertion to work around Supabase type inference issues
+  const supabase = getSupabase();
   await (supabase.from("api_activity_log") as unknown as { insert: (data: ApiActivityLogInsert) => Promise<unknown> }).insert(logEntry);
 }
 
@@ -80,6 +84,8 @@ export async function GET(
   if (!validation.valid) {
     return NextResponse.json({ error: validation.error }, { status: 401 });
   }
+
+  const supabase = getSupabase();
 
   // Fetch project data
   const { data: projectData, error } = await supabase
@@ -228,6 +234,7 @@ export async function PATCH(
       last_activity_at: now,
     };
     // Use type assertion to work around Supabase type inference issues
+    const supabase = getSupabase();
     const { error } = await (supabase
       .from("projects") as unknown as { update: (data: unknown) => { eq: (col: string, val: string) => Promise<{ error: Error | null }> } })
       .update(updatePayload)
@@ -258,7 +265,8 @@ export async function PATCH(
     }
 
     // Delete existing tags for this project
-    await supabase
+    const supabaseForTags = getSupabase();
+    await supabaseForTags
       .from("project_tags")
       .delete()
       .eq("project_id", id);
@@ -272,7 +280,7 @@ export async function PATCH(
       }));
 
       // Use type assertion to work around Supabase type inference issues
-      const { error: tagError } = await (supabase
+      const { error: tagError } = await (supabaseForTags
         .from("project_tags") as unknown as { insert: (data: typeof tagsToInsert) => Promise<{ error: Error | null }> })
         .insert(tagsToInsert);
 

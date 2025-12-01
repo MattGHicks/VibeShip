@@ -2,11 +2,13 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import type { Database, ApiActivityLogInsert } from "@/types/database";
 
-// Service role client for API access (bypasses RLS)
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Create client lazily to avoid build-time errors
+function getSupabase() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // Max file size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -21,6 +23,7 @@ async function validateApiKey(
 
   const apiKey = authHeader.replace("Bearer ", "");
 
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("projects")
     .select("id, api_key, user_id")
@@ -58,6 +61,7 @@ async function logActivity(
   };
 
   // Use type assertion to work around Supabase type inference issues
+  const supabase = getSupabase();
   await (supabase.from("api_activity_log") as unknown as { insert: (data: ApiActivityLogInsert) => Promise<unknown> }).insert(logEntry);
 }
 
@@ -116,6 +120,7 @@ export async function POST(
   }
 
   // Check for existing screenshot and delete it first
+  const supabase = getSupabase();
   const { data: existingProjectData } = await supabase
     .from("projects")
     .select("screenshot_url")
