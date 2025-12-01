@@ -86,7 +86,9 @@ Run if `.vibe/` folder doesn't exist:
 - What was tricky or unexpected?
 - Any patterns or approaches worth remembering?
 
-Then update both `where_i_left_off` AND `lessons_learned` via API.
+Then:
+1. Update both `where_i_left_off` AND `lessons_learned` via API
+2. Update the local `.vibe/vibeship.md` file with the new content so user can see it immediately
 
 **Never:** Interrupt mid-task or update without confirmation.
 
