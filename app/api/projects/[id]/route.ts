@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import type { Database } from "@/types/database";
+import type { Database, Project, ProjectTag, ApiActivityLogInsert } from "@/types/database";
 
 // Service role client for API access (bypasses RLS)
 const supabase = createClient<Database>(
@@ -28,11 +28,13 @@ async function validateApiKey(
 
   const apiKey = authHeader.replace("Bearer ", "");
 
-  const { data: project, error } = await supabase
+  const { data, error } = await supabase
     .from("projects")
     .select("id, api_key")
     .eq("id", projectId)
     .single();
+
+  const project = data as { id: string; api_key: string | null } | null;
 
   if (error || !project) {
     return { valid: false, error: "Project not found" };
@@ -54,13 +56,16 @@ async function logActivity(
   const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
   const userAgent = request.headers.get("user-agent") || "unknown";
 
-  await supabase.from("api_activity_log").insert({
+  const logEntry: ApiActivityLogInsert = {
     project_id: projectId,
     action,
-    details,
+    details: details as Database["public"]["Tables"]["api_activity_log"]["Insert"]["details"],
     ip_address: ip,
     user_agent: userAgent,
-  });
+  };
+
+  // Use type assertion to work around Supabase type inference issues
+  await (supabase.from("api_activity_log") as unknown as { insert: (data: ApiActivityLogInsert) => Promise<unknown> }).insert(logEntry);
 }
 
 // GET: Read project context
@@ -77,7 +82,7 @@ export async function GET(
   }
 
   // Fetch project data
-  const { data: project, error } = await supabase
+  const { data: projectData, error } = await supabase
     .from("projects")
     .select(`
       id, name, slug, description, status,
@@ -89,15 +94,25 @@ export async function GET(
     .eq("id", id)
     .single();
 
+  const project = projectData as Pick<Project,
+    | "id" | "name" | "slug" | "description" | "status"
+    | "where_i_left_off" | "lessons_learned"
+    | "github_repo_url" | "live_url"
+    | "github_stars" | "github_forks" | "github_open_issues" | "github_language"
+    | "created_at" | "updated_at" | "last_activity_at"
+  > | null;
+
   if (error || !project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
   // Fetch tags
-  const { data: tags } = await supabase
+  const { data: tagsData } = await supabase
     .from("project_tags")
     .select("tag_type, tag_value")
     .eq("project_id", id);
+
+  const tags = (tagsData ?? []) as Pick<ProjectTag, "tag_type" | "tag_value">[];
 
   // Group tags by type
   const groupedTags = {
@@ -106,7 +121,7 @@ export async function GET(
     tools: [] as string[],
   };
 
-  tags?.forEach((tag) => {
+  tags.forEach((tag) => {
     if (tag.tag_type === "model") groupedTags.models.push(tag.tag_value);
     else if (tag.tag_type === "framework") groupedTags.frameworks.push(tag.tag_value);
     else if (tag.tag_type === "tool") groupedTags.tools.push(tag.tag_value);
@@ -192,39 +207,96 @@ export async function PATCH(
     }
   }
 
-  if (Object.keys(updates).length === 0) {
+  // Handle tags separately (they're stored in a different table)
+  const tagsToUpdate = body.tags as Array<{ tag_type: string; tag_value: string }> | undefined;
+  let tagsUpdated = false;
+
+  if (Object.keys(updates).length === 0 && !tagsToUpdate) {
     return NextResponse.json(
-      { error: `No valid fields to update. Allowed fields: ${ALLOWED_UPDATE_FIELDS.join(", ")}` },
+      { error: `No valid fields to update. Allowed fields: ${ALLOWED_UPDATE_FIELDS.join(", ")}, tags` },
       { status: 400 }
     );
   }
 
-  // Apply updates with timestamps
   const now = new Date().toISOString();
-  const { error } = await supabase
-    .from("projects")
-    .update({
+
+  // Apply project field updates if any
+  if (Object.keys(updates).length > 0) {
+    const updatePayload = {
       ...updates,
       updated_at: now,
       last_activity_at: now,
-    })
-    .eq("id", id);
+    };
+    // Use type assertion to work around Supabase type inference issues
+    const { error } = await (supabase
+      .from("projects") as unknown as { update: (data: unknown) => { eq: (col: string, val: string) => Promise<{ error: Error | null }> } })
+      .update(updatePayload)
+      .eq("id", id);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
+
+  // Handle tags update if provided
+  if (tagsToUpdate && Array.isArray(tagsToUpdate)) {
+    // Validate tag structure
+    const validTagTypes = ["model", "framework", "tool"];
+    for (const tag of tagsToUpdate) {
+      if (!tag.tag_type || !tag.tag_value) {
+        return NextResponse.json(
+          { error: "Each tag must have tag_type and tag_value" },
+          { status: 400 }
+        );
+      }
+      if (!validTagTypes.includes(tag.tag_type)) {
+        return NextResponse.json(
+          { error: `Invalid tag_type "${tag.tag_type}". Must be one of: ${validTagTypes.join(", ")}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Delete existing tags for this project
+    await supabase
+      .from("project_tags")
+      .delete()
+      .eq("project_id", id);
+
+    // Insert new tags
+    if (tagsToUpdate.length > 0) {
+      const tagsToInsert = tagsToUpdate.map(tag => ({
+        project_id: id,
+        tag_type: tag.tag_type as "model" | "framework" | "tool",
+        tag_value: tag.tag_value,
+      }));
+
+      // Use type assertion to work around Supabase type inference issues
+      const { error: tagError } = await (supabase
+        .from("project_tags") as unknown as { insert: (data: typeof tagsToInsert) => Promise<{ error: Error | null }> })
+        .insert(tagsToInsert);
+
+      if (tagError) {
+        return NextResponse.json({ error: `Failed to update tags: ${tagError.message}` }, { status: 500 });
+      }
+    }
+
+    tagsUpdated = true;
+    changedFields.push("tags");
   }
 
   // Log the update activity with details
   await logActivity(
     id,
     `update_${changedFields.join("_")}`,
-    { fields: changedFields, values: updates },
+    { fields: changedFields, values: updates, tags_updated: tagsUpdated },
     request
   );
 
   return NextResponse.json({
     success: true,
     updated: changedFields,
+    tags_updated: tagsUpdated,
     timestamp: now,
   });
 }

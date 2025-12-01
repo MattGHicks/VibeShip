@@ -29,6 +29,7 @@ import {
   ChevronUp,
   Plus,
   Compass,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -146,6 +147,22 @@ export function AppSidebar({ user }: AppSidebarProps) {
                   <Link href="/import">
                     <Github className="h-4 w-4" />
                     <span>Import from GitHub</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Learn</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/guide"}>
+                  <Link href="/guide">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Vibe Coding Guide</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
