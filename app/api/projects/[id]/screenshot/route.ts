@@ -115,17 +115,34 @@ export async function POST(
     );
   }
 
-  // Generate unique filename
-  const ext = imageType === "jpeg" ? "jpg" : imageType;
-  const fileName = `${validation.userId}/${id}/${Date.now()}.${ext}`;
+  // Check for existing screenshot and delete it first
+  const { data: existingProject } = await supabase
+    .from("projects")
+    .select("screenshot_url")
+    .eq("id", id)
+    .single();
 
-  // Upload to Supabase Storage
+  if (existingProject?.screenshot_url) {
+    // Extract the storage path from the public URL
+    const urlParts = existingProject.screenshot_url.split("/screenshots/");
+    if (urlParts.length > 1) {
+      const oldPath = urlParts[1];
+      // Delete old screenshot (ignore errors - file might not exist)
+      await supabase.storage.from("screenshots").remove([oldPath]);
+    }
+  }
+
+  // Generate filename (use fixed name per project to allow upsert)
+  const ext = imageType === "jpeg" ? "jpg" : imageType;
+  const fileName = `${validation.userId}/${id}/screenshot.${ext}`;
+
+  // Upload to Supabase Storage (upsert to replace existing)
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from("screenshots")
     .upload(fileName, buffer, {
       contentType: `image/${imageType}`,
       cacheControl: "3600",
-      upsert: false,
+      upsert: true,
     });
 
   if (uploadError) {
@@ -136,15 +153,18 @@ export async function POST(
     );
   }
 
-  // Get public URL
+  // Get public URL with cache-busting timestamp
   const { data: { publicUrl } } = supabase.storage
     .from("screenshots")
     .getPublicUrl(uploadData.path);
 
+  // Add cache-busting query param so browsers load the new image
+  const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`;
+
   // Update project with new screenshot URL
   const now = new Date().toISOString();
   const updatePayload = {
-    screenshot_url: publicUrl,
+    screenshot_url: cacheBustedUrl,
     updated_at: now,
     last_activity_at: now,
   };
@@ -172,7 +192,7 @@ export async function POST(
 
   return NextResponse.json({
     success: true,
-    screenshot_url: publicUrl,
+    screenshot_url: cacheBustedUrl,
     size: buffer.length,
     timestamp: now,
   });

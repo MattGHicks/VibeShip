@@ -12,13 +12,232 @@ interface GeneratePromptOptions {
   baseUrl: string;
 }
 
-export function generateAiContextPrompt({
-  project,
-  tags,
-  apiKey,
-  baseUrl,
-}: GeneratePromptOptions): string {
-  // Group tags by type
+// ============================================================================
+// BOOTSTRAP PROMPT - What the user copies (tiny!)
+// ============================================================================
+
+export function generateBootstrapPrompt(projectName: string): string {
+  return `# VibeShip: ${projectName}
+
+Read the \`.vibe/\` folder in this project for context and instructions.
+
+1. **Read** \`.vibe/INSTRUCTIONS.md\` for how to work with VibeShip
+2. **Read** \`.vibe/vibeship.md\` for current project context
+3. **Source** \`.vibe/.secrets\` has API credentials (never commit)
+
+Start by reading these files, then ask what to work on today.`;
+}
+
+// ============================================================================
+// INSTRUCTIONS.md - Standardized behavior (rarely changes)
+// ============================================================================
+
+export function generateInstructionsMd(options: {
+  projectId: string;
+  baseUrl: string;
+  projectName: string;
+  repoIdentifier: string | null;
+}): string {
+  const { projectId, baseUrl, projectName, repoIdentifier } = options;
+  const endpoint = `${baseUrl}/api/projects/${projectId}`;
+  const screenshotEndpoint = `${baseUrl}/api/projects/${projectId}/screenshot`;
+  const projectUrl = `${baseUrl}/projects/${projectId}`;
+
+  return `# VibeShip AI Instructions
+
+> These instructions tell AI tools how to work with VibeShip for this project.
+> **Do not edit manually** - regenerate from VibeShip if needed.
+
+## Your Role
+
+You are helping a vibe coder work on **${projectName}**. VibeShip tracks progress so they never lose context between sessions. Your role: help them build, keep context synced, and encourage shipping!
+
+---
+
+## Session Start Checklist
+
+Every session, do these checks:
+
+### 1. Verify Correct Folder
+${repoIdentifier ? `\`\`\`bash
+git remote get-url origin 2>/dev/null | grep -q "${repoIdentifier}" && echo "✓ Correct folder" || echo "⚠ WARNING: Wrong folder"
+\`\`\`` : "Check that you're in the right project directory."}
+
+### 2. Read Current Context
+\`\`\`bash
+cat .vibe/vibeship.md
+\`\`\`
+
+### 3. Check if Setup Needed
+If \`vibeship.md\` shows empty fields (description, where_i_left_off), run the Initial Setup flow below.
+
+---
+
+## API Reference
+
+**Endpoint:** \`${endpoint}\`
+**Screenshot:** \`${screenshotEndpoint}\`
+**Project URL:** ${projectUrl}
+
+### Read Project
+\`\`\`bash
+source .vibe/.secrets
+curl -X GET "$VIBESHIP_ENDPOINT" -H "Authorization: Bearer $VIBESHIP_API_KEY"
+\`\`\`
+
+### Update Project
+\`\`\`bash
+source .vibe/.secrets
+curl -X PATCH "$VIBESHIP_ENDPOINT" \\
+  -H "Authorization: Bearer $VIBESHIP_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "where_i_left_off": "Your progress notes here",
+    "lessons_learned": "What you learned",
+    "tags": [{"tag_type": "framework", "tag_value": "Next.js"}]
+  }'
+\`\`\`
+
+### Upload Screenshot
+\`\`\`bash
+source .vibe/.secrets
+# Capture screenshot
+screencapture -x /tmp/vibeship_screenshot.png
+
+# Upload (file-based to avoid arg length issues)
+printf '{"image": "data:image/png;base64,%s"}' "$(base64 -i /tmp/vibeship_screenshot.png | tr -d '\\n')" > /tmp/screenshot_payload.json
+curl -X POST "${screenshotEndpoint}" \\
+  -H "Authorization: Bearer $VIBESHIP_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d @/tmp/screenshot_payload.json
+\`\`\`
+
+### Writable Fields
+- \`description\` (string) - Brief project description
+- \`where_i_left_off\` (string) - Current progress and next steps
+- \`lessons_learned\` (string) - Insights from the project
+- \`status\` (enum) - "active", "paused", "shipped", "graveyard"
+- \`tags\` (array) - Tech stack: \`[{tag_type: "model"|"framework"|"tool", tag_value: "Name"}]\`
+
+---
+
+## Initial Setup Flow
+
+Run this if the project hasn't been set up yet:
+
+### Step 1: Analyze Codebase
+\`\`\`bash
+# Read key files
+cat README.md package.json CLAUDE.md 2>/dev/null | head -200
+git log --oneline -10
+\`\`\`
+
+### Step 2: Auto-Detect Tech Stack
+
+Look for:
+- **AI Models:** anthropic, openai imports → Claude, GPT-4
+- **Frameworks:** package.json deps → Next.js, React, Tailwind
+- **Tools:** config files → Vercel, Supabase, Docker
+
+### Step 3: Capture Screenshot
+If dev server running, capture and upload a screenshot.
+
+### Step 4: Update VibeShip
+\`\`\`bash
+source .vibe/.secrets
+curl -X PATCH "$VIBESHIP_ENDPOINT" \\
+  -H "Authorization: Bearer $VIBESHIP_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "description": "Your crafted description",
+    "where_i_left_off": "Current state and next steps",
+    "tags": [{"tag_type": "framework", "tag_value": "Next.js"}]
+  }'
+\`\`\`
+
+### Step 5: Update Local vibeship.md
+After API success, update \`.vibe/vibeship.md\` with the same info.
+
+---
+
+## When to Update VibeShip
+
+### Do Automatically (Silent)
+- Read .vibe/vibeship.md at session start
+
+### Offer Proactively
+- **After git push:** "Want me to update VibeShip with your progress?"
+- **After completing a feature:** "Nice work! Should we log this?"
+- **When user says "done" or "stopping":** "Let me save your progress."
+- **After fixing a tricky bug:** "Worth adding to lessons learned?"
+
+### On Request Only
+- Full project updates
+- Status changes
+- Screenshot uploads
+
+### Never Do
+- Interrupt mid-task to suggest updates
+- Nag about incomplete fields
+- Update without user confirmation
+
+---
+
+## After Git Push
+
+"Pushed to GitHub! Want me to update VibeShip with your progress?"
+
+If yes:
+1. Update progress notes via API
+2. Offer to capture fresh screenshot (if UI changed)
+3. Update local .vibe/vibeship.md
+
+---
+
+## Shipping Mindset
+
+When user ships (status → shipped):
+- Celebrate! "Congrats on shipping! That's what vibe coding is all about."
+- Prompt: "Any lessons learned worth capturing?"
+- Encourage: "Ready to start the next project?"
+
+Use momentum language:
+- "Nice progress!" (not "Task complete")
+- "What are we shipping today?" (not "What do you want to do?")
+- "Hit a snag - let's work through it" (not "Error occurred")
+
+---
+
+## Guidelines
+
+1. **Read .vibe/ first** - Instant context, works offline
+2. **Keep .vibe/ synced** - Update vibeship.md after API calls
+3. **Be specific** - Include file names, function names, next steps
+4. **Stay concise** - Summaries should be scannable
+5. **Encourage shipping** - Celebrate progress, maintain momentum
+
+## Constraints
+
+- Only read/update this specific project
+- Cannot create/delete projects
+- Cannot modify project name, visibility, or GitHub settings
+- Screenshots must be base64 PNG/JPEG under 5MB
+- API key stays in .secrets only (never in vibeship.md)
+`;
+}
+
+// ============================================================================
+// VIBESHIP.MD - Project context (changes often)
+// ============================================================================
+
+export function generateVibeshipMd(options: {
+  project: Project;
+  tags: ProjectTag[];
+  baseUrl: string;
+}): string {
+  const { project, tags, baseUrl } = options;
+  const projectUrl = `${baseUrl}/projects/${project.id}`;
+
   const models = tags.filter((t) => t.tag_type === "model").map((t) => t.tag_value);
   const frameworks = tags.filter((t) => t.tag_type === "framework").map((t) => t.tag_value);
   const tools = tags.filter((t) => t.tag_type === "tool").map((t) => t.tag_value);
@@ -30,501 +249,137 @@ export function generateAiContextPrompt({
     graveyard: "Project has been abandoned/archived",
   };
 
-  const endpoint = `${baseUrl}/api/projects/${project.id}`;
-  const screenshotEndpoint = `${baseUrl}/api/projects/${project.id}/screenshot`;
-  const projectUrl = `${baseUrl}/projects/${project.id}`;
+  return `# VibeShip Project Context
 
-  // Check if project needs initial setup (more comprehensive check)
-  const needsSetup = !project.description || !project.where_i_left_off || !project.screenshot_url;
-  const needsScreenshot = !project.screenshot_url;
-  const needsTags = tags.length === 0;
+> Last synced: ${new Date().toISOString()}
+> See INSTRUCTIONS.md for how AI should work with this project.
 
-  // Extract repo name from GitHub URL for verification
+## Project: ${project.name}
+
+| Field | Value |
+|-------|-------|
+| **ID** | ${project.id} |
+| **Status** | ${project.status} (${statusDescriptions[project.status]}) |
+| **VibeShip** | ${projectUrl} |
+| **GitHub** | ${project.github_repo_url || "Not linked"} |
+| **Live** | ${project.live_url || "Not deployed"} |
+
+## Description
+
+${project.description || "_Not set - run initial setup to populate_"}
+
+## Where I Left Off
+
+${project.where_i_left_off || "_Not documented yet_"}
+
+## Lessons Learned
+
+${project.lessons_learned || "_None documented yet_"}
+
+## Tech Stack
+
+${models.length > 0 ? `- **AI Models:** ${models.join(", ")}` : "- AI Models: Not specified"}
+${frameworks.length > 0 ? `- **Frameworks:** ${frameworks.join(", ")}` : "- Frameworks: Not specified"}
+${tools.length > 0 ? `- **Tools:** ${tools.join(", ")}` : "- Tools: Not specified"}
+`;
+}
+
+// ============================================================================
+// .SECRETS - API credentials (never committed)
+// ============================================================================
+
+export function generateSecretsMd(options: {
+  projectId: string;
+  apiKey: string;
+  baseUrl: string;
+}): string {
+  const { projectId, apiKey, baseUrl } = options;
+  const endpoint = `${baseUrl}/api/projects/${projectId}`;
+
+  return `# VibeShip API credentials - DO NOT COMMIT THIS FILE
+# This file should be in .gitignore
+
+export VIBESHIP_PROJECT_ID="${projectId}"
+export VIBESHIP_API_KEY="${apiKey}"
+export VIBESHIP_ENDPOINT="${endpoint}"
+`;
+}
+
+// ============================================================================
+// LEGACY: Full prompt for backwards compatibility
+// ============================================================================
+
+export function generateAiContextPrompt({
+  project,
+  tags,
+  apiKey,
+  baseUrl,
+}: GeneratePromptOptions): string {
   const repoIdentifier = project.github_repo_url
     ? project.github_repo_url.replace(/\.git$/, "").split("/").slice(-2).join("/")
     : null;
 
-  return `# VibeShip AI Companion: ${project.name}
+  // Generate all three files as a single prompt for initial setup
+  const bootstrap = generateBootstrapPrompt(project.name);
+  const instructions = generateInstructionsMd({
+    projectId: project.id,
+    baseUrl,
+    projectName: project.name,
+    repoIdentifier,
+  });
+  const vibeshipMd = generateVibeshipMd({ project, tags, baseUrl });
+  const secrets = generateSecretsMd({ projectId: project.id, apiKey, baseUrl });
 
-You are helping a vibe coder work on their project. VibeShip tracks progress so they never lose context between sessions. Your role: help them build, keep context synced, and encourage shipping!
+  const needsSetup = !project.description || !project.where_i_left_off || !project.screenshot_url;
 
-${needsSetup ? `## SETUP REQUIRED
-
-This project needs VibeShip setup. **Complete ALL setup steps before asking what to work on.**
-
-### Setup Checklist:
-- ${!project.description ? "[ ] Description - needs to be populated" : "[x] Description - done"}
-- ${!project.where_i_left_off ? "[ ] Where I Left Off - needs to be populated" : "[x] Where I Left Off - done"}
-- ${needsScreenshot ? "[ ] Screenshot - needs to be captured" : "[x] Screenshot - done"}
-- ${needsTags ? "[ ] Tech Stack Tags - needs auto-detection" : "[x] Tech Stack Tags - done"}
-` : ""}
-
----
-
-## Step 0: Verify You're in the Right Folder
-
-Before doing anything else, verify you're in the correct project directory:
-
-${repoIdentifier ? `### Check Git Remote
-\`\`\`bash
-git remote get-url origin 2>/dev/null | grep -q "${repoIdentifier}" && echo "Correct folder" || echo "WARNING: Git remote doesn't match"
-\`\`\`
-Expected to contain: \`${repoIdentifier}\`` : ""}
-
-### Check for Existing .vibe Folder
-\`\`\`bash
-if [ -f ".vibe/vibeship.md" ]; then
-  grep -q "${project.id}" .vibe/vibeship.md && echo "Correct folder - .vibe exists" || echo "WARNING: Different project's .vibe folder"
-fi
-\`\`\`
-
-**If verification fails:** Ask the user to confirm you're in the right directory before proceeding.
+  return `${bootstrap}
 
 ---
 
-## Step 1: Initialize .vibe/ Folder (First Time Only)
+## Setup Required: Create .vibe/ Folder
 
-If the \`.vibe/\` folder doesn't exist yet, create it:
+${needsSetup ? "**This project needs initial setup.** " : ""}Create these files in the project root:
 
-### 1a. Ensure .gitignore protects secrets
+### 1. Add to .gitignore
 \`\`\`bash
 grep -q ".vibe/.secrets" .gitignore 2>/dev/null || echo ".vibe/.secrets" >> .gitignore
 \`\`\`
 
-### 1b. Create .vibe/ directory and files
+### 2. Create .vibe/INSTRUCTIONS.md
 \`\`\`bash
 mkdir -p .vibe
+cat > .vibe/INSTRUCTIONS.md << 'INSTRUCTIONS_EOF'
+${instructions}
+INSTRUCTIONS_EOF
 \`\`\`
 
-### 1c. Create .vibe/.secrets (API credentials - NEVER commit this)
+### 3. Create .vibe/vibeship.md
+\`\`\`bash
+cat > .vibe/vibeship.md << 'VIBESHIP_EOF'
+${vibeshipMd}
+VIBESHIP_EOF
+\`\`\`
+
+### 4. Create .vibe/.secrets
 \`\`\`bash
 cat > .vibe/.secrets << 'SECRETS_EOF'
-# VibeShip API credentials - DO NOT COMMIT THIS FILE
-# This file should be in .gitignore
-
-export VIBESHIP_PROJECT_ID="${project.id}"
-export VIBESHIP_API_KEY="${apiKey}"
-export VIBESHIP_ENDPOINT="${endpoint}"
+${secrets}
 SECRETS_EOF
 chmod 600 .vibe/.secrets
 \`\`\`
 
-### 1d. Create .vibe/vibeship.md (project context - OK to commit)
-\`\`\`bash
-cat > .vibe/vibeship.md << 'CONTEXT_EOF'
-# VibeShip Project Context
-
-> Auto-generated by VibeShip. Last synced: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-## Project: ${project.name}
-**Project ID:** ${project.id}
-**Status:** ${project.status}
-**VibeShip:** ${projectUrl}
-
-## Verification Anchors
-- **GitHub remote:** ${project.github_repo_url || "Not linked"}
-- **Project slug:** ${project.slug}
-
-## Where I Left Off
-${project.where_i_left_off || "_Run initial setup to populate_"}
-
-## Lessons Learned
-${project.lessons_learned || "_Not documented yet_"}
-
-## Tech Stack
-${models.length > 0 ? `- **AI Models:** ${models.join(", ")}` : "- AI Models: Not specified"}
-${frameworks.length > 0 ? `- **Frameworks:** ${frameworks.join(", ")}` : "- Frameworks: Not specified"}
-${tools.length > 0 ? `- **Tools:** ${tools.join(", ")}` : "- Tools: Not specified"}
-
-## Links
-- **GitHub:** ${project.github_repo_url || "Not linked"}
-- **Live:** ${project.live_url || "Not deployed"}
-
----
-*To sync: \`source .vibe/.secrets && curl -X GET "$VIBESHIP_ENDPOINT" -H "Authorization: Bearer $VIBESHIP_API_KEY"\`*
-CONTEXT_EOF
-\`\`\`
-
-After creating, tell the user: **"Created .vibe/ folder for local project tracking. The vibeship.md file can be committed to git - your API key is safely stored in .secrets which is gitignored."**
-
 ---
 
-## Project Overview
-- **Name:** ${project.name}
-- **Status:** ${project.status} (${statusDescriptions[project.status]})
-- **Description:** ${project.description || "_Not set - please analyze the codebase and add one_"}
-
-## Current Progress
-**Where I Left Off:**
-${project.where_i_left_off || "_Not documented - please update based on recent work_"}
-
-**Lessons Learned:**
-${project.lessons_learned || "_Not documented_"}
-
-## Tech Stack
-${models.length > 0 ? `- **AI Models:** ${models.join(", ")}` : ""}
-${frameworks.length > 0 ? `- **Frameworks:** ${frameworks.join(", ")}` : ""}
-${tools.length > 0 ? `- **Tools:** ${tools.join(", ")}` : ""}
-
-## Links
-${project.github_repo_url ? `- **GitHub:** ${project.github_repo_url}` : "- GitHub: Not linked"}
-${project.live_url ? `- **Live:** ${project.live_url}` : "- Live: Not deployed"}
-
----
-
-## API Access
-
-**Endpoint:** ${endpoint}
-**API Key:** ${apiKey}
-
-### Read Project Context
-\`\`\`bash
-curl -X GET "${endpoint}" \\
-  -H "Authorization: Bearer ${apiKey}"
-\`\`\`
-
-### Update Project Fields
-\`\`\`bash
-curl -X PATCH "${endpoint}" \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "description": "A brief description of what this project does",
-    "where_i_left_off": "Current progress and next steps",
-    "lessons_learned": "Key insights from working on this"
-  }'
-\`\`\`
-
-### Upload Screenshot (base64 PNG/JPEG)
-\`\`\`bash
-curl -X POST "${screenshotEndpoint}" \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"image": "data:image/png;base64,<base64_encoded_image>"}'
-\`\`\`
-
-## Writable Fields
-- \`description\` (string) - Brief project description
-- \`where_i_left_off\` (string) - Notes about current progress and next steps
-- \`lessons_learned\` (string) - Insights and learnings from the project
-- \`status\` (enum) - One of: "active", "paused", "shipped", "graveyard"
-
----
-
-## AI Task: Initial Project Setup
-
-${needsSetup ? `**This project needs comprehensive VibeShip setup!** Complete ALL steps before proceeding.
-
----
-
-### Step 1: Deep Codebase Analysis
-
-Thoroughly analyze the project to understand what it is and what tech it uses:
-
-#### 1a. Read key files (run all in parallel):
-\`\`\`bash
-# Read these files to understand the project
-cat README.md 2>/dev/null || echo "No README"
-cat package.json 2>/dev/null || echo "No package.json"
-cat CLAUDE.md 2>/dev/null || echo "No CLAUDE.md"
-cat pyproject.toml 2>/dev/null || echo "No pyproject.toml"
-cat Cargo.toml 2>/dev/null || echo "No Cargo.toml"
-cat go.mod 2>/dev/null || echo "No go.mod"
-\`\`\`
-
-#### 1b. Check project structure:
-\`\`\`bash
-# Get project structure (max 3 levels deep)
-find . -type f -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.py" -o -name "*.go" -o -name "*.rs" 2>/dev/null | head -50
-ls -la
-\`\`\`
-
-#### 1c. Analyze recent activity:
-\`\`\`bash
-# Recent commits to understand what's been worked on
-git log --oneline -15
-git diff --stat HEAD~5..HEAD 2>/dev/null || git diff --stat HEAD~3..HEAD 2>/dev/null || echo "Not enough commits"
-\`\`\`
-
----
-
-### Step 2: Auto-Detect Tech Stack Tags
-
-Based on your analysis, identify ALL technologies used. Look for:
-
-**AI Models (check for API keys, imports, or mentions in code/docs):**
-- Claude (anthropic, claude-3, claude-sonnet, claude-opus)
-- GPT-4 / ChatGPT (openai, gpt-4, gpt-3.5)
-- Gemini (google-generativeai, gemini-pro)
-- Llama / Local models (ollama, llama.cpp)
-- Other AI models
-
-**Frameworks (check package.json, imports, config files):**
-- Next.js, React, Vue, Svelte, Angular
-- Express, Fastify, Hono, NestJS
-- Django, Flask, FastAPI
-- Rails, Laravel, Spring Boot
-- Tailwind CSS, shadcn/ui, Material UI
-
-**Tools (check for config files, CI/CD, services):**
-- Cursor, v0, Bolt, Replit
-- Vercel, Netlify, Railway, Fly.io
-- Supabase, Firebase, PlanetScale
-- Stripe, Auth0, Clerk
-- Docker, GitHub Actions
-
-**Create a JSON array of detected tags for the API call later.**
-
----
-
-### Step 3: Start Dev Server & Prepare Screenshot
-
-**This step is REQUIRED - a screenshot helps users remember their project visually.**
-
-#### 3a. Check for and start dev server:
-\`\`\`bash
-# Check if already running on common ports
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || \\
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5173 2>/dev/null || \\
-curl -s -o /dev/null -w "%{http_code}" http://localhost:8080 2>/dev/null || \\
-echo "No server detected"
-\`\`\`
-
-#### 3b. If no server running, start it:
-\`\`\`bash
-# Try to start dev server (check package.json for script name first)
-# Common commands: npm run dev, npm start, yarn dev, pnpm dev
-npm run dev &
-sleep 8  # Give server time to start
-\`\`\`
-
-#### 3c. Open browser and capture screenshot:
-\`\`\`bash
-# Open in browser first (macOS)
-open http://localhost:3000
-
-# Wait for page to fully load
-sleep 3
-
-# Capture screenshot of the browser window
-screencapture -l $(osascript -e 'tell app "System Events" to return id of first window of (first process whose frontmost is true)') /tmp/vibeship_screenshot.png 2>/dev/null || \\
-screencapture -x /tmp/vibeship_screenshot.png
-\`\`\`
-
-#### 3d. Upload screenshot to VibeShip:
-\`\`\`bash
-curl -X POST "${screenshotEndpoint}" \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d "{\\"image\\": \\"data:image/png;base64,$(base64 -i /tmp/vibeship_screenshot.png)\\"}"
-\`\`\`
-
-**If screenshot upload fails, note the error but continue to the next step.**
-
----
-
-### Step 4: Craft Project Context
-
-Based on your deep analysis, prepare:
-
-1. **Description** (1-2 sentences): What does this project do? Who is it for?
-2. **Where I Left Off** (detailed):
-   - What was recently worked on (from git history)
-   - Current state of the project
-   - Suggested next steps
-   - Any known issues or TODOs
-3. **Lessons Learned** (if any interesting patterns or decisions are visible)
-
----
-
-### Step 5: Update VibeShip API
-
-Make the API call with ALL gathered information:
-
-\`\`\`bash
-curl -X PATCH "${endpoint}" \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "description": "YOUR_CRAFTED_DESCRIPTION",
-    "where_i_left_off": "YOUR_DETAILED_PROGRESS_NOTES",
-    "lessons_learned": "ANY_INSIGHTS_FROM_CODEBASE",
-    "tags": [
-      {"tag_type": "model", "tag_value": "Claude"},
-      {"tag_type": "framework", "tag_value": "Next.js"},
-      {"tag_type": "tool", "tag_value": "Vercel"}
-    ]
-  }'
-\`\`\`
-
----
-
-### Step 6: Update Local .vibe/vibeship.md
-
-After API success, update the local file with all discovered information:
-
-\`\`\`bash
-cat > .vibe/vibeship.md << 'VIBESHIP_EOF'
-# VibeShip Project Context
-
-> Auto-generated by VibeShip. Last synced: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-## Project: ${project.name}
-**Project ID:** ${project.id}
-**Status:** ${project.status}
-**VibeShip:** ${projectUrl}
-
-## Description
-[YOUR_CRAFTED_DESCRIPTION]
-
-## Where I Left Off
-[YOUR_DETAILED_PROGRESS_NOTES]
-
-## Lessons Learned
-[ANY_INSIGHTS]
-
-## Tech Stack
-- **AI Models:** [DETECTED_MODELS]
-- **Frameworks:** [DETECTED_FRAMEWORKS]
-- **Tools:** [DETECTED_TOOLS]
-
-## Links
-- **GitHub:** ${project.github_repo_url || "Not linked"}
-- **Live:** ${project.live_url || "Not deployed"}
-
----
-*To sync: \`source .vibe/.secrets && curl -X GET "$VIBESHIP_ENDPOINT" -H "Authorization: Bearer $VIBESHIP_API_KEY"\`*
-VIBESHIP_EOF
-\`\`\`
-
----
-
-### Step 7: Confirm Setup & Ask What to Work On
-
-After completing ALL steps, present this to the user:
-
----
-
-**VibeShip Setup Complete!**
-
-I've analyzed your project and set up VibeShip tracking:
-
-- **Description:** [show what you wrote]
-- **Tech Stack:** [list detected tags]
-- **Screenshot:** [uploaded/failed]
-- **Progress Notes:** Saved to VibeShip
-
-**View your project:** ${projectUrl}
-
----
-
-**Suggestions to improve your VibeShip setup:**
-- [If no live_url] Consider deploying to get a live URL tracked
-- [If no README] Adding a README.md would help future sessions
-- [If complex project] Breaking work into milestones helps track progress
-- [Other relevant suggestions based on what you found]
-
----
-
-**What would you like to work on today?**
-
----` : `### Ongoing Updates
-When working on this project:
-1. **Update "where_i_left_off"** when you complete significant work or stop mid-task
-2. **Add to "lessons_learned"** when you discover something worth remembering
-3. **Update status** when appropriate (active → shipped, etc.)
-4. **Capture a new screenshot** after major UI changes`}
-
----
-
-## Behavioral Triggers: When to Update VibeShip
-
-### Automatic (Do Silently)
-- **Session start**: Read .vibe/vibeship.md or fetch from API to understand context
-
-### Proactive (Offer, Don't Force)
-- **After git push**: "Pushed to GitHub! Want me to update VibeShip with your progress?"
-- **After completing a feature**: "Nice work! Should we log this progress?"
-- **When user says "done" or "stopping"**: "Before you go, let me save your progress to VibeShip."
-- **After fixing a tricky bug**: "Worth adding to lessons learned?"
-
-### On Request Only
-- Full project updates
-- Status changes (active → shipped, etc.)
-- Screenshot uploads
-
-### Never Do
-- Interrupt flow to suggest updates mid-task
-- Nag about incomplete fields
-- Update without user confirmation (except initial context fetch)
-
----
-
-## After Any VibeShip Update
-
-When you successfully update VibeShip via API, **also update the local .vibe/vibeship.md** to keep it in sync:
-
-\`\`\`bash
-# Update the "Last synced" timestamp and relevant fields in .vibe/vibeship.md
-# This keeps the local file in sync with VibeShip
-\`\`\`
-
----
-
-## When Pushing to GitHub
-
-After a successful git push, offer to update VibeShip:
-
-"Pushed to GitHub! Want me to update VibeShip with your progress?"
-
-If yes:
-\`\`\`bash
-curl -X PATCH "${endpoint}" \\
-  -H "Authorization: Bearer ${apiKey}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "where_i_left_off": "Just pushed: [brief description]. Next: [what to do next]"
-  }'
-\`\`\`
-
-Then update .vibe/vibeship.md with the same content.
-
----
-
-## Shipping Mindset
-
-When the user ships (status → shipped), celebrate!
-
-- "Congrats on shipping ${project.name}! That's what vibe coding is all about."
-- Prompt for reflection: "Any lessons learned worth capturing?"
-- Encourage: "Ready to start the next project?"
-
-Use language that encourages momentum:
-- Instead of "Task complete" → "Nice progress!"
-- Instead of "What do you want to do?" → "What are we shipping today?"
-- Instead of "Error occurred" → "Hit a snag - let's work through it"
-
----
-
-## Guidelines for AI
-1. **Check .vibe/ first** - Read .vibe/vibeship.md for instant context (works offline)
-2. **Verify folder** - Run verification before any VibeShip operations
-3. **Keep .vibe/ synced** - After API updates, update the local .vibe/vibeship.md too
-4. **Be specific** - Include file names, function names, and specific next steps
-5. **Keep it concise** - Summaries should be scannable, not walls of text
-6. **Encourage shipping** - Celebrate progress, maintain momentum
-
-## Constraints
-- You can ONLY read and update this specific project
-- You CANNOT create new projects or delete projects
-- You CANNOT modify the project name, visibility, or GitHub settings
-- Screenshot uploads must be base64-encoded PNG or JPEG under 5MB
-- API key must NEVER be written to .vibe/vibeship.md (only in .vibe/.secrets)
-`;
+After creating files, tell the user: **"Created .vibe/ folder. The vibeship.md and INSTRUCTIONS.md files can be committed - API key is in .secrets which is gitignored."**
+
+${needsSetup ? `
+Then run the **Initial Setup Flow** from INSTRUCTIONS.md to populate project context.
+` : `
+Then read .vibe/vibeship.md and ask what to work on today.
+`}`;
 }
 
 export function maskApiKey(apiKey: string): string {
-  // Show first 6 chars, mask the rest: vs_abc1...
   if (apiKey.length <= 8) return apiKey;
   return `${apiKey.slice(0, 6)}${"•".repeat(6)}`;
 }
