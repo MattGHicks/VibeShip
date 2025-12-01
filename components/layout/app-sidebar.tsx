@@ -31,7 +31,6 @@ import {
   Compass,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -82,11 +81,30 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden">
-                  <Image src="/favicon.svg" alt="VibeShip" width={32} height={32} />
+                <div className="relative flex h-8 w-8 items-center justify-center">
+                  <div className="absolute inset-0 bg-primary/20 rounded-lg blur-sm" />
+                  <svg
+                    viewBox="0 0 32 32"
+                    fill="none"
+                    className="relative w-6 h-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M16 4L20 10V20L16 26L12 20V10L16 4Z"
+                      className="fill-primary"
+                    />
+                    <path
+                      d="M12 14L8 18V22L12 18V14Z"
+                      className="fill-primary/60"
+                    />
+                    <path
+                      d="M20 14L24 18V22L20 18V14Z"
+                      className="fill-primary/60"
+                    />
+                  </svg>
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">VibeShip</span>
+                  <span className="font-semibold tracking-tight">VibeShip</span>
                   <span className="text-xs text-muted-foreground">
                     Ship your vibes
                   </span>

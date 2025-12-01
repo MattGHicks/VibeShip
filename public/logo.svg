@@ -1,105 +1,64 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Main gradient - purple to blue -->
-    <linearGradient id="vibeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#A855F7"/>
-      <stop offset="50%" stop-color="#8B5CF6"/>
-      <stop offset="100%" stop-color="#6366F1"/>
+    <!-- Amber gradient -->
+    <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5A623"/>
+      <stop offset="50%" stop-color="#E8951F"/>
+      <stop offset="100%" stop-color="#D4851E"/>
     </linearGradient>
 
-    <!-- Glow effect -->
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+    <!-- Subtle glow -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="coloredBlur"/>
       <feMerge>
         <feMergeNode in="coloredBlur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
-
-    <!-- Exhaust gradient -->
-    <linearGradient id="exhaustGradient" x1="50%" y1="0%" x2="50%" y2="100%">
-      <stop offset="0%" stop-color="#F97316"/>
-      <stop offset="40%" stop-color="#FB923C"/>
-      <stop offset="100%" stop-color="#FBBF24" stop-opacity="0"/>
-    </linearGradient>
   </defs>
 
-  <!-- Background circle -->
-  <circle cx="256" cy="256" r="240" fill="#18181B"/>
-  <circle cx="256" cy="256" r="240" fill="url(#vibeGradient)" opacity="0.1"/>
+  <!-- Background circle - warm charcoal -->
+  <circle cx="256" cy="256" r="240" fill="#1C1917"/>
+
+  <!-- Subtle ambient glow -->
+  <circle cx="256" cy="256" r="180" fill="#F5A623" opacity="0.03"/>
 
   <!-- Outer ring -->
-  <circle cx="256" cy="256" r="230" stroke="url(#vibeGradient)" stroke-width="3" fill="none" opacity="0.4"/>
+  <circle cx="256" cy="256" r="230" stroke="url(#amberGrad)" stroke-width="2" fill="none" opacity="0.3"/>
 
-  <!-- Rocket body - geometric/angular style -->
+  <!-- Main rocket/arrow shape -->
   <g filter="url(#glow)">
-    <!-- Main rocket body -->
     <path
       d="M256 80
-         L310 180
-         L310 320
-         L280 360
-         L280 320
-         L256 340
-         L232 320
-         L232 360
-         L202 320
-         L202 180
+         L320 180
+         L320 340
+         L256 420
+         L192 340
+         L192 180
          Z"
-      fill="url(#vibeGradient)"
+      fill="url(#amberGrad)"
     />
 
-    <!-- Rocket window/cockpit -->
-    <ellipse cx="256" cy="180" rx="28" ry="35" fill="#18181B"/>
-    <ellipse cx="256" cy="175" rx="18" ry="22" fill="#A855F7" opacity="0.6"/>
-
-    <!-- Left fin -->
+    <!-- Left wing -->
     <path
-      d="M202 260 L140 340 L180 340 L202 300 Z"
-      fill="url(#vibeGradient)"
-    />
-
-    <!-- Right fin -->
-    <path
-      d="M310 260 L372 340 L332 340 L310 300 Z"
-      fill="url(#vibeGradient)"
-    />
-  </g>
-
-  <!-- Exhaust flames - wavy "vibe" element -->
-  <g opacity="0.9">
-    <!-- Center flame -->
-    <path
-      d="M256 360
-         Q246 400 256 420
-         Q266 440 256 460
-         Q246 440 256 420
-         Q266 400 256 360"
-      fill="url(#exhaustGradient)"
-    />
-    <!-- Left flame -->
-    <path
-      d="M236 355
-         Q226 385 236 405
-         Q246 425 236 440
-         Q226 420 236 400
-         Q246 380 236 355"
-      fill="url(#exhaustGradient)"
+      d="M192 240L120 320V380L192 300V240Z"
+      fill="#D4851E"
       opacity="0.7"
     />
-    <!-- Right flame -->
+
+    <!-- Right wing -->
     <path
-      d="M276 355
-         Q286 385 276 405
-         Q266 425 276 440
-         Q286 420 276 400
-         Q266 380 276 355"
-      fill="url(#exhaustGradient)"
+      d="M320 240L392 320V380L320 300V240Z"
+      fill="#D4851E"
       opacity="0.7"
     />
   </g>
 
-  <!-- Vibe waves - orbital rings -->
-  <ellipse cx="256" cy="256" rx="180" ry="40" stroke="#A855F7" stroke-width="2" fill="none" opacity="0.3" transform="rotate(-20 256 256)"/>
-  <ellipse cx="256" cy="256" rx="200" ry="35" stroke="#6366F1" stroke-width="1.5" fill="none" opacity="0.2" transform="rotate(15 256 256)"/>
+  <!-- Inner detail - subtle line -->
+  <path
+    d="M256 140L256 320"
+    stroke="#1C1917"
+    stroke-width="3"
+    opacity="0.2"
+  />
 </svg>
