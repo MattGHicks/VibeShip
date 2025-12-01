@@ -76,10 +76,17 @@ Run if `.vibe/` folder doesn't exist:
 ## When to Update
 
 **Offer after:**
-- `git push` - "Update VibeShip with progress?"
+- `git push` - "Update VibeShip with progress and lessons learned?"
 - Completing a feature - "Log this milestone?"
 - Fixing a tricky bug - "Add to lessons learned?"
 - UI changes - "Capture fresh screenshot?"
+
+**On commits/pushes, always ask about lessons learned:**
+- What worked well?
+- What was tricky or unexpected?
+- Any patterns or approaches worth remembering?
+
+Then update both `where_i_left_off` AND `lessons_learned` via API.
 
 **Never:** Interrupt mid-task or update without confirmation.
 
