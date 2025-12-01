@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { StatusSwitcher } from "@/components/projects/status-switcher";
 import { DeleteProjectButton } from "@/components/projects/delete-project-button";
+import { GitHubSyncButton } from "@/components/projects/github-sync-button";
+import { AutoSync } from "@/components/projects/auto-sync";
 import { TagDisplay } from "@/components/projects/tag-selector";
-import { Github, ExternalLink, Pencil, Globe, Lock, Calendar, Clock } from "lucide-react";
+import { Github, ExternalLink, Pencil, Globe, Lock, Calendar, Clock, Star } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { TagType } from "@/lib/actions/tags";
@@ -51,6 +53,14 @@ export default async function ProjectPage({
 
   return (
     <div className="space-y-6">
+      {/* Auto-sync GitHub data if stale (>1 hour) */}
+      {project.github_repo_id && (
+        <AutoSync
+          projectId={project.id}
+          lastSyncedAt={project.github_synced_at}
+        />
+      )}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -202,16 +212,22 @@ export default async function ProjectPage({
             </CardContent>
           </Card>
 
-          {project.github_repo_url && (
+          {project.github_repo_id && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">GitHub Stats</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="flex items-center gap-2 text-sm">
+                  <Star className="h-4 w-4 text-amber-500" />
                   <span className="text-muted-foreground">Stars:</span>
-                  <span>{project.github_stars}</span>
+                  <span className="font-medium">{project.github_stars}</span>
                 </div>
+                <Separator />
+                <GitHubSyncButton
+                  projectId={project.id}
+                  lastSyncedAt={project.github_synced_at}
+                />
               </CardContent>
             </Card>
           )}

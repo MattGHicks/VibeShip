@@ -173,3 +173,35 @@ export async function updateProjectStatus(id: string, status: ProjectStatus) {
 
   return { success: true };
 }
+
+export async function toggleProjectVisibility(id: string, isPublic: boolean) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .update({
+      is_public: isPublic,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${id}`);
+  revalidatePath("/discover");
+
+  return { success: true, isPublic };
+}

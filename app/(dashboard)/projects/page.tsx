@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Flame, Pause, Skull, Rocket, Github, ExternalLink, Search } from "lucide-react";
+import { Plus, Flame, Pause, Skull, Rocket, Github, ExternalLink, Search, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Project, ProjectStatus } from "@/types/database";
 import { TagDisplay } from "@/components/projects/tag-selector";
+import { VisibilityToggle } from "@/components/projects/visibility-toggle";
 import type { TagType } from "@/lib/actions/tags";
 
 const statusConfig: Record<ProjectStatus, { label: string; icon: React.ElementType; color: string }> = {
@@ -149,6 +150,18 @@ export default async function ProjectsPage({
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <VisibilityToggle
+                        projectId={project.id}
+                        isPublic={project.is_public}
+                      />
+                      {project.github_repo_id && (
+                        <div className="flex items-center gap-1 rounded-full bg-purple-500/10 px-2 py-1 text-xs font-medium text-purple-600 dark:text-purple-400">
+                          <RefreshCw className="h-3 w-3" />
+                          <span>Auto-sync</span>
+                        </div>
+                      )}
+                    </div>
                     {project.tags.length > 0 && (
                       <TagDisplay tags={project.tags} size="sm" />
                     )}

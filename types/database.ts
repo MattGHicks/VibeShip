@@ -73,6 +73,7 @@ export interface Database {
           where_i_left_off: string | null;
           lessons_learned: string | null;
           last_activity_at: string;
+          github_synced_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -92,6 +93,7 @@ export interface Database {
           where_i_left_off?: string | null;
           lessons_learned?: string | null;
           last_activity_at?: string;
+          github_synced_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -111,6 +113,7 @@ export interface Database {
           where_i_left_off?: string | null;
           lessons_learned?: string | null;
           last_activity_at?: string;
+          github_synced_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

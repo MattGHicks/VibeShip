@@ -95,6 +95,100 @@ function slugify(text: string): string {
     .trim();
 }
 
+export async function syncGitHubProject(projectId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  // Get the project and verify ownership
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id, github_repo_id, user_id")
+    .eq("id", projectId)
+    .single();
+
+  if (projectError || !project) {
+    return { error: "Project not found" };
+  }
+
+  if (project.user_id !== user.id) {
+    return { error: "Not authorized" };
+  }
+
+  if (!project.github_repo_id) {
+    return { error: "Project is not linked to a GitHub repository" };
+  }
+
+  // Get GitHub access token
+  const { data: userData, error: userError } = await supabase
+    .from("users")
+    .select("github_access_token")
+    .eq("id", user.id)
+    .single();
+
+  if (userError || !userData?.github_access_token) {
+    return { error: "GitHub account not connected. Please reconnect your GitHub account." };
+  }
+
+  try {
+    // Fetch latest repo data from GitHub
+    const response = await fetch(`https://api.github.com/repositories/${project.github_repo_id}`, {
+      headers: {
+        Authorization: `Bearer ${userData.github_access_token}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        return { error: "GitHub token expired. Please reconnect your GitHub account." };
+      }
+      if (response.status === 404) {
+        return { error: "Repository not found on GitHub. It may have been deleted or made private." };
+      }
+      return { error: "Failed to fetch repository from GitHub." };
+    }
+
+    const repo: GitHubRepo = await response.json();
+
+    // Update project with latest GitHub data
+    const { error: updateError } = await supabase
+      .from("projects")
+      .update({
+        github_stars: repo.stargazers_count,
+        description: repo.description || undefined,
+        live_url: repo.homepage || undefined,
+        github_synced_at: new Date().toISOString(),
+      })
+      .eq("id", projectId);
+
+    if (updateError) {
+      return { error: updateError.message };
+    }
+
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath("/projects");
+    revalidatePath("/dashboard");
+
+    return {
+      success: true,
+      data: {
+        stars: repo.stargazers_count,
+        description: repo.description,
+        homepage: repo.homepage,
+      }
+    };
+  } catch {
+    return { error: "Failed to sync with GitHub. Please try again." };
+  }
+}
+
 export async function importGitHubRepo(repoId: number) {
   const supabase = await createClient();
 
@@ -178,6 +272,7 @@ export async function importGitHubRepo(repoId: number) {
         github_repo_id: repo.id,
         github_stars: repo.stargazers_count,
         live_url: repo.homepage || null,
+        github_synced_at: new Date().toISOString(),
       })
       .select()
       .single();

@@ -47,9 +47,10 @@ export default async function DiscoverPage({
   const supabase = await createClient();
 
   // Get all public projects with user info and tags
+  // Note: Use users!projects_user_id_fkey to specify the direct FK relationship
   let query = supabase
     .from("projects")
-    .select("*, project_tags(tag_type, tag_value), users(username, display_name, avatar_url)")
+    .select("*, project_tags(tag_type, tag_value), users!projects_user_id_fkey(username, display_name, avatar_url)")
     .eq("is_public", true);
 
   if (params.status && params.status !== "all") {
