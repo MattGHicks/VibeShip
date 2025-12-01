@@ -50,7 +50,6 @@ export function InlineProjectPage({ project: initialProject, tags }: InlineProje
   };
 
   const hasGitHub = !!project.github_repo_id;
-  const showLessons = project.status === "graveyard" || project.status === "shipped" || project.lessons_learned;
 
   return (
     <div className="space-y-6 pb-8">
@@ -217,26 +216,24 @@ export function InlineProjectPage({ project: initialProject, tags }: InlineProje
           </BentoCard>
         )}
 
-        {/* Lessons Learned - Conditional */}
-        {showLessons && (
-          <BentoCard className={cn(
-            "lg:col-span-12",
-            hasGitHub ? "xl:col-span-4" : "xl:col-span-6"
-          )} delay={400}>
-            <CardHeader icon={Lightbulb} iconColor="text-status-shipped">
-              Lessons Learned
-            </CardHeader>
-            <div className="mt-3">
-              <EditableTextarea
-                value={project.lessons_learned || ""}
-                onSave={(value) => updateField("lessons_learned", value)}
-                placeholder="What did you learn from this project?"
-                emptyStateMessage="Click to document what you learned..."
-                minRows={3}
-              />
-            </div>
-          </BentoCard>
-        )}
+        {/* Lessons Learned */}
+        <BentoCard className={cn(
+          "lg:col-span-12",
+          hasGitHub ? "xl:col-span-4" : "xl:col-span-6"
+        )} delay={400}>
+          <CardHeader icon={Lightbulb} iconColor="text-status-shipped">
+            Lessons Learned
+          </CardHeader>
+          <div className="mt-3">
+            <EditableTextarea
+              value={project.lessons_learned || ""}
+              onSave={(value) => updateField("lessons_learned", value)}
+              placeholder="What did you learn from this project?"
+              emptyStateMessage="Click to document what you learned..."
+              minRows={3}
+            />
+          </div>
+        </BentoCard>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
