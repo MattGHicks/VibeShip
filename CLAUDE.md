@@ -14,10 +14,10 @@ VibeShip is a web platform for solo vibe coders to track, organize, and share th
 
 | Layer | Technology | Notes |
 |-------|------------|-------|
-| Framework | Next.js 15 | App Router, Server Components, Server Actions |
+| Framework | Next.js 16 | App Router, Server Components, Server Actions |
 | Language | TypeScript | Strict mode |
 | Styling | Tailwind CSS v4 + shadcn/ui | Dark mode default |
-| Database | Supabase (PostgreSQL) | Also handles Auth |
+| Database | Supabase (PostgreSQL) | Also handles Auth + Storage |
 | Auth | Supabase Auth | GitHub OAuth |
 | Fonts | Geist Sans & Geist Mono | Google Fonts |
 | Hosting | Vercel | Auto-deploy on push |
@@ -32,6 +32,68 @@ VibeShip is a web platform for solo vibe coders to track, organize, and share th
 | **Production** | https://vibe-ship.vercel.app |
 | **GitHub Repo** | https://github.com/MattGHicks/VibeShip |
 | **Local Dev** | http://localhost:3000 |
+| **AI Instructions** | https://vibe-ship.vercel.app/_static/ai-instructions.md |
+
+---
+
+## AI Integration
+
+VibeShip provides API endpoints for AI tools to read/write project context. This enables AI assistants to maintain context across sessions.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  User's Project                                             │
+│  ├── .vibe/                                                 │
+│  │   ├── vibeship.md      # Project context (committed)     │
+│  │   └── .secrets         # API credentials (gitignored)    │
+│  └── ...                                                    │
+└─────────────────────────────────────────────────────────────┘
+           │                           ▲
+           │ API calls                 │ Fetch instructions
+           ▼                           │
+┌─────────────────────────────────────────────────────────────┐
+│  VibeShip                                                   │
+│  ├── /api/projects/[id]          # Read/update project      │
+│  ├── /api/projects/[id]/screenshot  # Upload screenshot     │
+│  └── /_static/ai-instructions.md    # Hosted instructions   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Bootstrap Prompt
+
+Users copy this small prompt into their AI tool. It fetches current instructions from VibeShip:
+
+```
+# VibeShip: {ProjectName}
+
+Fetch instructions: https://vibe-ship.vercel.app/_static/ai-instructions.md
+Then read `.vibe/vibeship.md` for project context.
+Source `.vibe/.secrets` for API credentials.
+```
+
+### API Endpoints
+
+**GET /api/projects/[id]** - Read project context
+- Auth: `Bearer {api_key}`
+- Returns: project details, tags, GitHub stats
+
+**PATCH /api/projects/[id]** - Update project
+- Auth: `Bearer {api_key}`
+- Fields: `description`, `where_i_left_off`, `lessons_learned`, `status`, `tags`
+
+**POST /api/projects/[id]/screenshot** - Upload screenshot
+- Auth: `Bearer {api_key}`
+- Body: `{ "image": "data:image/png;base64,..." }`
+- Max size: 5MB
+
+### Key Files
+
+- `lib/ai-prompt.ts` - Generates bootstrap prompt, vibeship.md, .secrets
+- `public/_static/ai-instructions.md` - Hosted AI instructions (update here for all projects)
+- `app/api/projects/[id]/route.ts` - Project API (GET, PATCH)
+- `app/api/projects/[id]/screenshot/route.ts` - Screenshot upload API
 
 ---
 
@@ -75,6 +137,8 @@ VibeShip/
 │   ├── (dashboard)/               # Protected dashboard routes
 │   │   ├── layout.tsx             # Sidebar layout wrapper
 │   │   ├── dashboard/page.tsx     # Main dashboard with stats
+│   │   ├── guide/page.tsx         # AI setup guide
+│   │   ├── import/page.tsx        # GitHub import
 │   │   └── projects/
 │   │       ├── page.tsx           # Projects list with filters
 │   │       ├── new/page.tsx       # Create new project
@@ -83,7 +147,15 @@ VibeShip/
 │   │           └── edit/page.tsx  # Edit project
 │   ├── (public)/                  # Public routes
 │   │   ├── layout.tsx             # Public header/footer
-│   │   └── page.tsx               # Landing page
+│   │   ├── page.tsx               # Landing page
+│   │   └── discover/page.tsx      # Browse public projects
+│   ├── [username]/                # Public profile routes
+│   │   ├── page.tsx               # User profile
+│   │   └── [slug]/page.tsx        # Public project view
+│   ├── api/
+│   │   └── projects/[id]/
+│   │       ├── route.ts           # Project API (GET, PATCH)
+│   │       └── screenshot/route.ts # Screenshot upload
 │   ├── layout.tsx                 # Root layout
 │   └── globals.css                # Global styles + theme
 ├── components/
@@ -92,27 +164,31 @@ VibeShip/
 │   ├── projects/
 │   │   ├── project-form.tsx       # Create/edit project form
 │   │   ├── status-switcher.tsx    # Quick status change dropdown
+│   │   ├── api-settings.tsx       # API key management
+│   │   ├── tag-selector.tsx       # Tech stack tag picker
 │   │   └── delete-project-button.tsx
 │   └── ui/                        # shadcn/ui components
 ├── lib/
 │   ├── actions/
-│   │   └── projects.ts            # Server actions for CRUD
+│   │   ├── projects.ts            # Server actions for CRUD
+│   │   └── github.ts              # GitHub import actions
 │   ├── supabase/
 │   │   ├── client.ts              # Browser Supabase client
 │   │   ├── server.ts              # Server Supabase client
 │   │   └── middleware.ts          # Auth session refresh
+│   ├── ai-prompt.ts               # AI prompt generation
+│   ├── github.ts                  # GitHub API helpers
 │   └── utils.ts                   # cn() helper
 ├── types/
 │   └── database.ts                # TypeScript types for DB
-├── hooks/
-│   └── use-mobile.ts              # Mobile detection hook
+├── public/
+│   ├── _static/
+│   │   └── ai-instructions.md     # Hosted AI instructions
+│   ├── favicon.svg
+│   ├── logo.svg
+│   └── icon.svg
 ├── supabase/
 │   └── migrations/
-│       └── 20241130_initial_schema.sql
-├── public/
-│   ├── favicon.svg                # 32x32 favicon (rocket)
-│   ├── logo.svg                   # 512x512 full logo
-│   └── icon.svg                   # 24x24 inline icon
 └── middleware.ts                  # Route protection
 ```
 
@@ -141,7 +217,7 @@ VibeShip/
 
 ### shadcn/ui Components Installed
 
-avatar, badge, button, card, dialog, dropdown-menu, input, label, select, separator, sheet, sidebar, skeleton, tabs, textarea, tooltip
+avatar, badge, button, card, dialog, dropdown-menu, input, label, select, separator, sheet, sidebar, skeleton, tabs, textarea, tooltip, collapsible
 
 ---
 
@@ -161,9 +237,10 @@ avatar, badge, button, card, dialog, dropdown-menu, input, label, select, separa
    - user_id (FK to users)
    - name, slug (unique per user)
    - description, status, is_public
-   - github_repo_url, github_repo_id, github_stars
+   - github_repo_url, github_repo_id, github_stars, github_forks, github_open_issues, github_language
    - live_url, screenshot_url
    - where_i_left_off, lessons_learned
+   - **api_key** (unique, for AI access)
    - last_activity_at, created_at, updated_at
 
 3. **project_tags** - Tech stack tags
@@ -178,12 +255,27 @@ avatar, badge, button, card, dialog, dropdown-menu, input, label, select, separa
 5. **project_likes** - User likes on projects
 6. **bookmarks** - User bookmarks
 
+7. **api_activity_log** - Tracks AI API usage
+   - project_id (FK)
+   - action (read, update, upload_screenshot)
+   - details (JSON)
+   - ip_address, user_agent
+   - created_at
+
+### Supabase Storage
+
+- **screenshots** bucket - Project screenshots uploaded via API
+  - Path format: `{user_id}/{project_id}/screenshot.{ext}`
+  - Public read access
+  - Max 5MB per file
+
 ### Row Level Security
 
 - Users can read public profiles, edit own
 - Projects visible if public OR owned by user
 - Tags follow project visibility
 - Likes/bookmarks private to user
+- API routes use service role key (bypass RLS)
 
 ---
 
@@ -196,6 +288,7 @@ createProject(data)        // Create new project with auto-slug
 updateProject(id, data)    // Update project fields
 deleteProject(id)          // Delete and redirect
 updateProjectStatus(id, status)  // Quick status change
+regenerateApiKey(id)       // Generate new API key
 ```
 
 ---
@@ -218,11 +311,26 @@ updateProjectStatus(id, status)  // Quick status change
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # For API routes
 ```
 
 ---
 
 ## Development Notes
+
+### Lazy Supabase Client in API Routes
+
+API routes must create Supabase client lazily (inside functions) to avoid build-time errors:
+
+```typescript
+// WRONG - fails during Vercel build
+const supabase = createClient(...);
+
+// CORRECT - lazy initialization
+function getSupabase() {
+  return createClient(...);
+}
+```
 
 ### Type Assertions for Supabase
 
@@ -239,20 +347,9 @@ const projects = projectsData as Project[] | null;
 - `(dashboard)` - Protected routes with sidebar
 - `(public)` - Public routes with header/footer
 
-### Server Actions Pattern
+### Static Files
 
-All mutations use Server Actions in `lib/actions/`:
-
-```typescript
-"use server";
-
-export async function createProject(data: ProjectFormData) {
-  const supabase = await createClient();
-  // ... mutation logic
-  revalidatePath("/dashboard");
-  redirect(`/projects/${project.id}`);
-}
-```
+Files in `public/_static/` are served directly and excluded from middleware via matcher pattern in `middleware.ts`.
 
 ---
 
@@ -260,7 +357,7 @@ export async function createProject(data: ProjectFormData) {
 
 ### Phase 1: Foundation - COMPLETED
 
-- [x] Next.js 15 project setup with TypeScript
+- [x] Next.js project setup with TypeScript
 - [x] Tailwind CSS + shadcn/ui with dark theme
 - [x] Custom color scheme (purple primary, status colors)
 - [x] Supabase integration (client + server)
@@ -277,82 +374,17 @@ export async function createProject(data: ProjectFormData) {
 - [x] Landing page with feature showcase
 - [x] Custom logo/favicon (rocket ship design)
 
----
+### Phase 2: Enhanced Features - COMPLETED
 
-### Phase 2: Enhanced Features - NEXT UP
-
-#### 2.1 Tech Stack Tags
-Let users tag projects with AI models, frameworks, and tools.
-
-**Tasks:**
-- [ ] Create tag selector component with autocomplete
-- [ ] Fetch from tags_catalog table
-- [ ] Allow custom tags (auto-add to catalog)
-- [ ] Display tags on project cards and detail pages
-- [ ] Filter projects by tags
-
-**Files to create:**
-- `components/projects/tag-selector.tsx`
-- `lib/actions/tags.ts`
-- Modify `project-form.tsx` to include tags
-
-#### 2.2 Screenshot Upload
-Allow users to upload project screenshots.
-
-**Tasks:**
-- [ ] Set up Supabase Storage bucket "screenshots"
-- [ ] Create upload component with preview
-- [ ] Add storage RLS policies
-- [ ] Display screenshots on project cards
-- [ ] Support drag-and-drop upload
-
-**Files to create:**
-- `components/projects/screenshot-upload.tsx`
-- `lib/actions/storage.ts`
-
-#### 2.3 GitHub Import
-Import repositories from GitHub.
-
-**Tasks:**
-- [ ] Create `/import` page with repo list
-- [ ] Use GitHub API to fetch user repos
-- [ ] One-click import to create project
-- [ ] Sync GitHub stars periodically
-- [ ] Store GitHub repo ID for updates
-
-**Files to create:**
-- `app/(dashboard)/import/page.tsx`
-- `lib/github.ts`
-- `lib/actions/github.ts`
-
-#### 2.4 Public Profiles
-Public profile pages showing user's shipped projects.
-
-**Tasks:**
-- [ ] Create `app/[username]/page.tsx` dynamic route
-- [ ] Display user info + public projects
-- [ ] Profile customization in `/settings`
-- [ ] SEO meta tags for profiles
-
-**Files to create:**
-- `app/[username]/page.tsx`
-- `app/[username]/[project-slug]/page.tsx`
-- `app/(dashboard)/settings/page.tsx`
-
-#### 2.5 Discover Page
-Browse public projects from all users.
-
-**Tasks:**
-- [ ] Create discover page with grid layout
-- [ ] Filter by status, tags, sort options
-- [ ] Like/bookmark functionality
-- [ ] Trending/recent sorting
-
-**Files to create:**
-- `app/(public)/discover/page.tsx`
-- `lib/actions/social.ts`
-
----
+- [x] Tech stack tags (model, framework, tool)
+- [x] Screenshot upload (Supabase Storage)
+- [x] GitHub import (fetch repos, sync stars)
+- [x] Public profiles (`/[username]`)
+- [x] Discover page (browse public projects)
+- [x] Project visibility toggle (public/private)
+- [x] AI Integration (API endpoints for context sync)
+- [x] Hosted AI instructions (auto-updating across projects)
+- [x] API activity logging
 
 ### Phase 3: Future Features
 

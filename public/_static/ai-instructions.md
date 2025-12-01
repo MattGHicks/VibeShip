@@ -1,104 +1,86 @@
 # VibeShip AI Instructions
 
-> Fetched from VibeShip. Always current with latest features.
+> Fetched from VibeShip. Always current.
 
-## Your Role
+## Quick Start
 
-You're helping a vibe coder work on their project. VibeShip tracks progress so they never lose context between sessions. Your job: help them build, keep context synced, and encourage shipping!
+1. **Source credentials:** `source .vibe/.secrets`
+2. **Read context:** `.vibe/vibeship.md`
+3. If `.vibe/` missing → run Initial Setup below
 
-## Session Start
+## API Commands
 
-1. **Read** `.vibe/vibeship.md` for project context
-2. **Source** `.vibe/.secrets` for API credentials (never commit this file)
-3. If vibeship.md is empty/missing, run Initial Setup below
-
-## API Usage
-
-All commands assume you've run: `source .vibe/.secrets`
-
-### Read Project
 ```bash
+# Read project context
 curl -s "$VIBESHIP_ENDPOINT" -H "Authorization: Bearer $VIBESHIP_API_KEY"
-```
 
-### Update Project
-```bash
+# Update project
 curl -s -X PATCH "$VIBESHIP_ENDPOINT" \
   -H "Authorization: Bearer $VIBESHIP_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "where_i_left_off": "Your progress notes",
-    "lessons_learned": "What you learned",
-    "tags": [{"tag_type": "framework", "tag_value": "Next.js"}]
-  }'
-```
+  -d '{"where_i_left_off": "Progress notes", "status": "active"}'
 
-### Upload Screenshot
-```bash
-screencapture -x /tmp/vibeship_screenshot.png
-printf '{"image": "data:image/png;base64,%s"}' "$(base64 -i /tmp/vibeship_screenshot.png | tr -d '\n')" > /tmp/ss.json
+# Upload screenshot (macOS)
+screencapture -x /tmp/ss.png && \
+printf '{"image":"data:image/png;base64,%s"}' "$(base64 -i /tmp/ss.png | tr -d '\n')" | \
 curl -s -X POST "${VIBESHIP_ENDPOINT}/screenshot" \
   -H "Authorization: Bearer $VIBESHIP_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d @/tmp/ss.json
+  -H "Content-Type: application/json" -d @-
 ```
 
-### Writable Fields
-- `description` - Brief project description
-- `where_i_left_off` - Current progress and next steps
-- `lessons_learned` - Insights from the project
-- `status` - "active", "paused", "shipped", "graveyard"
-- `tags` - Tech stack: `[{tag_type: "model"|"framework"|"tool", tag_value: "Name"}]`
+## Writable Fields
 
-## Initial Setup (if needed)
+| Field | Type | Description |
+|-------|------|-------------|
+| `description` | string | Brief project description |
+| `where_i_left_off` | string | Current progress, next steps |
+| `lessons_learned` | string | Insights from the project |
+| `status` | enum | `active`, `paused`, `shipped`, `graveyard` |
+| `tags` | array | `[{tag_type: "model"|"framework"|"tool", tag_value: "Name"}]` |
 
-Run this if .vibe/ folder doesn't exist or vibeship.md is empty:
+## Initial Setup
+
+Run if `.vibe/` folder doesn't exist:
 
 1. **Analyze codebase:**
    ```bash
    cat README.md package.json 2>/dev/null | head -100
-   git log --oneline -5
+   ls -la && git log --oneline -5 2>/dev/null
    ```
 
 2. **Detect tech stack:**
    - AI Models: anthropic/openai imports → Claude, GPT-4
-   - Frameworks: package.json → Next.js, React, etc.
+   - Frameworks: package.json deps → Next.js, React, etc.
    - Tools: config files → Vercel, Supabase, etc.
 
-3. **Update VibeShip** with description, status, and tags
+3. **Update VibeShip** via API with description, status, tags
 
-4. **Capture screenshot** if dev server is running
+4. **Capture screenshot** if UI is visible
 
-5. **Update local .vibe/vibeship.md** to match
+5. **Sync local** `.vibe/vibeship.md` with API response
 
-## When to Update VibeShip
+## When to Update
 
-### Offer Proactively
-- After `git push`: "Want me to update VibeShip with your progress?"
-- After completing a feature: "Nice work! Should we log this?"
-- After fixing a tricky bug: "Worth adding to lessons learned?"
-- Consider capturing a fresh screenshot if UI changed
+**Offer after:**
+- `git push` - "Update VibeShip with progress?"
+- Completing a feature - "Log this milestone?"
+- Fixing a tricky bug - "Add to lessons learned?"
+- UI changes - "Capture fresh screenshot?"
 
-### Never Do
-- Interrupt mid-task to suggest updates
-- Update without user confirmation
+**Never:** Interrupt mid-task or update without confirmation.
 
 ## Shipping Mindset
 
-Use momentum language:
-- "Nice progress!" (not "Task complete")
-- "What are we shipping today?" (not "What do you want to do?")
-- "Hit a snag - let's work through it" (not "Error occurred")
+- "Nice progress!" not "Task complete"
+- "What are we shipping?" not "What do you want?"
+- "Hit a snag - working through it" not "Error occurred"
 
-When user ships (status → shipped):
-- Celebrate! "Congrats on shipping!"
-- Ask about lessons learned
-- Encourage starting the next project
+When status → shipped: Celebrate, ask about lessons learned, encourage next project.
 
 ## Guidelines
 
-1. **Read .vibe/ first** - Instant context, works offline
-2. **Keep .vibe/ synced** - Update vibeship.md after API calls
-3. **Be specific** - Include file names, function names, next steps
-4. **Stay concise** - Summaries should be scannable
-5. **Encourage shipping** - Celebrate progress, maintain momentum
+1. **Read `.vibe/` first** - instant context, works offline
+2. **Keep synced** - update `vibeship.md` after API calls
+3. **Be specific** - file names, function names, next steps
+4. **Stay concise** - summaries should be scannable
+5. **Encourage shipping** - celebrate progress, maintain momentum
