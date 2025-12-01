@@ -17,15 +17,18 @@ interface GeneratePromptOptions {
 // ============================================================================
 // This is tiny and stable. AI fetches latest instructions from hosted URL.
 
+// Production URL for hosted instructions (always use this, even in local dev)
+const INSTRUCTIONS_URL = "https://vibe-ship.vercel.app/_static/ai-instructions.md";
+
 export function generateBootstrapPrompt(options: {
   projectName: string;
   baseUrl: string;
 }): string {
-  const { projectName, baseUrl } = options;
+  const { projectName } = options;
 
   return `# VibeShip: ${projectName}
 
-Fetch instructions: ${baseUrl}/_static/ai-instructions.md
+Fetch instructions: ${INSTRUCTIONS_URL}
 Then read \`.vibe/vibeship.md\` for project context.
 Source \`.vibe/.secrets\` for API credentials.`;
 }
