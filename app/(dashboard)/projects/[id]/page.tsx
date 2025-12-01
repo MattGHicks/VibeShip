@@ -6,8 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { StatusSwitcher } from "@/components/projects/status-switcher";
 import { DeleteProjectButton } from "@/components/projects/delete-project-button";
+import { TagDisplay } from "@/components/projects/tag-selector";
 import { Github, ExternalLink, Pencil, Globe, Lock, Calendar, Clock } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import type { TagType } from "@/lib/actions/tags";
+
+interface ProjectTag {
+  tag_type: TagType;
+  tag_value: string;
+}
 
 export default async function ProjectPage({
   params,
@@ -19,13 +27,15 @@ export default async function ProjectPage({
 
   const { data: project, error } = await supabase
     .from("projects")
-    .select("*")
+    .select("*, project_tags(tag_type, tag_value)")
     .eq("id", id)
     .single();
 
   if (error || !project) {
     notFound();
   }
+
+  const tags: ProjectTag[] = (project.project_tags as ProjectTag[]) || [];
 
   const createdAt = new Date(project.created_at).toLocaleDateString("en-US", {
     year: "numeric",
@@ -62,6 +72,11 @@ export default async function ProjectPage({
           {project.description && (
             <p className="text-muted-foreground max-w-2xl">{project.description}</p>
           )}
+          {tags.length > 0 && (
+            <div className="pt-2">
+              <TagDisplay tags={tags} />
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <StatusSwitcher projectId={project.id} currentStatus={project.status} />
@@ -89,6 +104,19 @@ export default async function ProjectPage({
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
+          {project.screenshot_url && (
+            <Card className="overflow-hidden">
+              <div className="relative aspect-video w-full">
+                <Image
+                  src={project.screenshot_url}
+                  alt={`${project.name} screenshot`}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </Card>
+          )}
+
           {project.where_i_left_off && (
             <Card>
               <CardHeader>

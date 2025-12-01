@@ -8,11 +8,11 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
-      // Check if user profile exists, if not redirect to create one
-      const { data: { user } } = await supabase.auth.getUser();
+    if (!error && sessionData.session) {
+      const { user } = sessionData.session;
+      const providerToken = sessionData.session.provider_token;
 
       if (user) {
         const { data: profile } = await supabase
@@ -21,18 +21,29 @@ export async function GET(request: Request) {
           .eq("id", user.id)
           .single();
 
-        // If no profile exists, create one
-        if (!profile) {
-          const metadata = user.user_metadata;
-          const username = metadata.user_name || metadata.preferred_username || user.email?.split("@")[0] || `user_${user.id.slice(0, 8)}`;
+        const metadata = user.user_metadata;
+        const username = metadata.user_name || metadata.preferred_username || user.email?.split("@")[0] || `user_${user.id.slice(0, 8)}`;
 
+        if (!profile) {
+          // Create new profile with GitHub token
           await supabase.from("users").insert({
             id: user.id,
             username: username,
             display_name: metadata.full_name || metadata.name || null,
             avatar_url: metadata.avatar_url || null,
             github_username: metadata.user_name || null,
+            github_access_token: providerToken || null,
           });
+        } else {
+          // Update existing profile with latest GitHub token
+          await supabase
+            .from("users")
+            .update({
+              github_access_token: providerToken || null,
+              github_username: metadata.user_name || null,
+              avatar_url: metadata.avatar_url || null,
+            })
+            .eq("id", user.id);
         }
       }
 

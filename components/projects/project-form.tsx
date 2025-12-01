@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Flame, Pause, Skull, Rocket, Globe, Lock, Loader2 } from "lucide-react";
 import { createProject, updateProject, type ProjectFormData } from "@/lib/actions/projects";
+import { getProjectTags, updateProjectTags, type TagType } from "@/lib/actions/tags";
+import { TagSelector } from "@/components/projects/tag-selector";
+import { ScreenshotUpload } from "@/components/projects/screenshot-upload";
 import type { Project, ProjectStatus } from "@/types/database";
 
 const statusOptions: { value: ProjectStatus; label: string; icon: React.ElementType; description: string }[] = [
@@ -30,10 +33,16 @@ interface ProjectFormProps {
   mode: "create" | "edit";
 }
 
+interface SelectedTag {
+  tag_type: TagType;
+  tag_value: string;
+}
+
 export function ProjectForm({ project, mode }: ProjectFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<SelectedTag[]>([]);
 
   const [formData, setFormData] = useState<ProjectFormData>({
     name: project?.name || "",
@@ -42,9 +51,29 @@ export function ProjectForm({ project, mode }: ProjectFormProps) {
     is_public: project?.is_public ?? false,
     github_repo_url: project?.github_repo_url || "",
     live_url: project?.live_url || "",
+    screenshot_url: project?.screenshot_url || null,
     where_i_left_off: project?.where_i_left_off || "",
     lessons_learned: project?.lessons_learned || "",
   });
+
+  // Load existing tags when editing
+  const loadTags = useCallback(async () => {
+    if (mode === "edit" && project) {
+      const result = await getProjectTags(project.id);
+      if (result.data) {
+        setSelectedTags(
+          result.data.map((tag) => ({
+            tag_type: tag.tag_type,
+            tag_value: tag.tag_value,
+          }))
+        );
+      }
+    }
+  }, [mode, project]);
+
+  useEffect(() => {
+    loadTags();
+  }, [loadTags]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,12 +85,17 @@ export function ProjectForm({ project, mode }: ProjectFormProps) {
         const result = await createProject(formData);
         if (result?.error) {
           setError(result.error);
+        } else if (result && "id" in result) {
+          // Save tags for new project
+          await updateProjectTags(result.id as string, selectedTags);
         }
       } else if (project) {
         const result = await updateProject(project.id, formData);
         if (result?.error) {
           setError(result.error);
         } else {
+          // Save tags for existing project
+          await updateProjectTags(project.id, selectedTags);
           router.push(`/projects/${project.id}`);
         }
       }
@@ -107,6 +141,16 @@ export function ProjectForm({ project, mode }: ProjectFormProps) {
               rows={3}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tech Stack</CardTitle>
+          <CardDescription>Tag the AI models, frameworks, and tools you used</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TagSelector selectedTags={selectedTags} onChange={setSelectedTags} />
         </CardContent>
       </Card>
 
@@ -199,6 +243,20 @@ export function ProjectForm({ project, mode }: ProjectFormProps) {
               placeholder="https://myproject.vercel.app"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Screenshot</CardTitle>
+          <CardDescription>Add a screenshot to showcase your project</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ScreenshotUpload
+            projectId={project?.id}
+            currentUrl={formData.screenshot_url}
+            onUpload={(url) => setFormData({ ...formData, screenshot_url: url })}
+          />
         </CardContent>
       </Card>
 

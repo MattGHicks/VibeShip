@@ -21,6 +21,7 @@ export type ProjectFormData = {
   is_public: boolean;
   github_repo_url?: string;
   live_url?: string;
+  screenshot_url?: string | null;
   where_i_left_off?: string;
   lessons_learned?: string;
 };
@@ -68,6 +69,7 @@ export async function createProject(data: ProjectFormData) {
       is_public: data.is_public,
       github_repo_url: data.github_repo_url || null,
       live_url: data.live_url || null,
+      screenshot_url: data.screenshot_url || null,
       where_i_left_off: data.where_i_left_off || null,
       lessons_learned: data.lessons_learned || null,
     })
