@@ -4,6 +4,9 @@ import { InlineProjectPage } from "@/components/projects/inline-project-page";
 import { AutoSync } from "@/components/projects/auto-sync";
 import type { TagType } from "@/lib/actions/tags";
 
+// Force dynamic rendering to always fetch fresh data from database
+export const dynamic = "force-dynamic";
+
 interface ProjectTag {
   tag_type: TagType;
   tag_value: string;
