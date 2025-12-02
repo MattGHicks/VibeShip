@@ -40,11 +40,11 @@ export function EditableTextarea({
   const [showModal, setShowModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Check if content needs truncation (more than 5 lines or 250 chars)
+  // Check if content needs truncation (more than 9 lines or 500 chars)
   const needsTruncation = useMemo(() => {
     if (!value) return false;
     const lineCount = value.split("\n").length;
-    return lineCount > 5 || value.length > 250;
+    return lineCount > 9 || value.length > 500;
   }, [value]);
 
   useEffect(() => {
@@ -206,7 +206,7 @@ export function EditableTextarea({
             <p
               className={cn(
                 "text-sm whitespace-pre-wrap leading-relaxed text-foreground/90",
-                needsTruncation && "line-clamp-5"
+                needsTruncation && "line-clamp-9"
               )}
             >
               {value}
