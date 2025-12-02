@@ -1,6 +1,6 @@
 # VibeShip Project Context
 
-> Last synced: 2025-12-02T02:30:00Z
+> Last synced: 2025-12-02T02:21:00Z
 > See INSTRUCTIONS.md for how AI should work with this project.
 
 ## Project: VibeShip
@@ -19,14 +19,16 @@ VibeShip is a project tracker for indie hackers and vibe coders. Import from Git
 
 ## Where I Left Off
 
-Fixed production OAuth authentication - was failing with "Invalid API key" error:
+Fixed production OAuth and API authentication issues:
 
 **Root Cause:**
 - Vercel environment variables weren't properly set for production
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` needed to be re-added in Vercel dashboard
+- `SUPABASE_SERVICE_ROLE_KEY` was missing (API returned 500)
 
 **Fixes Applied:**
 - Updated Vercel env vars with correct Supabase anon key
+- Added `SUPABASE_SERVICE_ROLE_KEY` for API routes
 - Excluded `/callback` route from middleware to prevent PKCE interference
 - Added `http://localhost:3000/**` to Supabase redirect URLs for local dev
 - Cleaned up debug logging from callback route after fixing
@@ -34,6 +36,7 @@ Fixed production OAuth authentication - was failing with "Invalid API key" error
 **Auth Flow Now Working:**
 - Production: https://vibe-ship.vercel.app → GitHub OAuth → dashboard
 - Local dev: http://localhost:3000 → GitHub OAuth → localhost dashboard
+- API: GET and PATCH operations working for project context sync
 
 All changes pushed and deployed to production.
 
@@ -55,6 +58,7 @@ All changes pushed and deployed to production.
 - Vercel env vars must have **Production** checkbox enabled - delete and re-add if values seem correct but auth fails
 - Supabase redirect URLs need `http://localhost:3000/**` wildcard for local OAuth to work
 - Exclude auth callback routes from middleware to prevent PKCE flow interference
+- API routes need `SUPABASE_SERVICE_ROLE_KEY` (not anon key) for database access
 
 ## Tech Stack
 
