@@ -4,11 +4,35 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const error_param = searchParams.get("error");
+  const error_description = searchParams.get("error_description");
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+
+  // Log incoming request details
+  console.log("[Auth Callback] Request received:", {
+    origin,
+    hasCode: !!code,
+    error_param,
+    error_description,
+    redirectTo,
+  });
+
+  // If OAuth provider returned an error
+  if (error_param) {
+    console.error("[Auth Callback] OAuth error:", error_param, error_description);
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(error_param)}&message=${encodeURIComponent(error_description || "")}`
+    );
+  }
 
   if (code) {
     const supabase = await createClient();
     const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    console.log("[Auth Callback] Code exchange result:", {
+      hasSession: !!sessionData?.session,
+      error: error?.message,
+    });
 
     if (!error && sessionData.session) {
       const { user } = sessionData.session;
@@ -52,5 +76,6 @@ export async function GET(request: Request) {
   }
 
   // Auth error, redirect to login with error
-  return NextResponse.redirect(`${origin}/login?error=auth_error`);
+  console.error("[Auth Callback] No code provided or exchange failed");
+  return NextResponse.redirect(`${origin}/login?error=auth_error&message=no_code_or_exchange_failed`);
 }

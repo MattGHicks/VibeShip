@@ -10,6 +10,8 @@ import Link from "next/link";
 function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+  const error = searchParams.get("error");
+  const errorMessage = searchParams.get("message");
 
   const handleGitHubLogin = async () => {
     const supabase = createClient();
@@ -67,6 +69,15 @@ function LoginForm() {
               Sign in to track your projects and pick up where you left off.
             </p>
           </div>
+
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <p className="font-medium">Authentication failed</p>
+              <p className="text-xs mt-1 text-red-400/80">
+                {error}: {errorMessage || "Unknown error"}
+              </p>
+            </div>
+          )}
 
           <Button
             onClick={handleGitHubLogin}
