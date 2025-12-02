@@ -1,6 +1,6 @@
 # VibeShip Project Context
 
-> Last synced: 2025-12-02T00:41:39Z
+> Last synced: 2025-12-02T00:44:58Z
 > See INSTRUCTIONS.md for how AI should work with this project.
 
 ## Project: VibeShip
@@ -38,13 +38,14 @@ Shipped major project page enhancements:
 
 All changes pushed and deployed to production.
 
+## Next Steps
+
+- [ ] Test new checklist and resource links features in production
+- [ ] Add drag-and-drop reordering for checklist items
+- [ ] Continue Phase 2 features (discover page enhancements, social features)
+
 ## Lessons Learned
 
-The AI prompt needs to be extremely detailed and prescriptive - AI tools work best with explicit step-by-step instructions rather than high-level goals. Including verification steps (check git remote, check .vibe/ exists) prevents AI from accidentally setting up the wrong project.
-
-Separating standardized instructions from dynamic context makes the system more maintainable and the bootstrap prompt much smaller to copy.
-
-**New learnings from this session:**
 - Combining related UI cards (Links + Resources) reduces visual clutter and makes better use of space
 - Extending existing API endpoints (PATCH) is cleaner than creating new endpoints for related operations
 - When Supabase CLI is slow/stuck, executing SQL directly in the dashboard SQL Editor is a reliable workaround
