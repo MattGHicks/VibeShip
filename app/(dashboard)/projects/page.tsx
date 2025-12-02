@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Flame, Pause, Skull, Rocket, Github, ExternalLink, Search, RefreshCw } from "lucide-react";
+import { Plus, Flame, Pause, Skull, Rocket, Github, ExternalLink, Search, RefreshCw, FolderKanban } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Project, ProjectStatus } from "@/types/database";
@@ -71,7 +71,10 @@ export default async function ProjectsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+          <div className="flex items-center gap-3 mb-1">
+            <FolderKanban className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+          </div>
           <p className="text-muted-foreground">
             Manage all your vibe coding projects
           </p>

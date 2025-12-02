@@ -333,11 +333,13 @@ export async function PATCH(
   }
 
   // Handle checklist operations
-  const supabaseForChecklist = getSupabase();
+  // Note: Using untyped client due to Supabase SDK type inference issues with these tables
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabaseUntyped: any = getSupabase();
 
   if (addNextStep && typeof addNextStep === "string") {
     // Get max sort_order
-    const { data: existing } = await supabaseForChecklist
+    const { data: existing } = await supabaseUntyped
       .from("project_checklist")
       .select("sort_order")
       .eq("project_id", id)
@@ -346,7 +348,7 @@ export async function PATCH(
 
     const nextOrder = existing && existing.length > 0 ? (existing[0] as { sort_order: number }).sort_order + 1 : 0;
 
-    await supabaseForChecklist
+    await supabaseUntyped
       .from("project_checklist")
       .insert({
         project_id: id,
@@ -358,7 +360,7 @@ export async function PATCH(
   }
 
   if (completeNextStep && typeof completeNextStep === "string") {
-    await supabaseForChecklist
+    await supabaseUntyped
       .from("project_checklist")
       .update({ is_completed: true, completed_at: now })
       .eq("id", completeNextStep)
@@ -368,7 +370,7 @@ export async function PATCH(
   }
 
   if (deleteNextStep && typeof deleteNextStep === "string") {
-    await supabaseForChecklist
+    await supabaseUntyped
       .from("project_checklist")
       .delete()
       .eq("id", deleteNextStep)
@@ -379,7 +381,7 @@ export async function PATCH(
 
   // Handle resource link operations
   if (addResourceLink && addResourceLink.title && addResourceLink.url) {
-    const { data: existingLinks } = await supabaseForChecklist
+    const { data: existingLinks } = await supabaseUntyped
       .from("project_links")
       .select("sort_order")
       .eq("project_id", id)
@@ -388,7 +390,7 @@ export async function PATCH(
 
     const nextLinkOrder = existingLinks && existingLinks.length > 0 ? (existingLinks[0] as { sort_order: number }).sort_order + 1 : 0;
 
-    await supabaseForChecklist
+    await supabaseUntyped
       .from("project_links")
       .insert({
         project_id: id,

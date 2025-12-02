@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -71,18 +72,18 @@ export function AppSidebar({ user }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            <SidebarMenuButton size="lg" asChild tooltip="VibeShip">
               <Link href="/dashboard">
-                <div className="relative flex h-8 w-8 items-center justify-center">
+                <div className="relative flex h-8 w-8 group-data-[collapsible=icon]:h-7 group-data-[collapsible=icon]:w-7 shrink-0 items-center justify-center">
                   <div className="absolute inset-0 bg-primary/20 rounded-lg blur-sm" />
                   <svg
                     viewBox="0 0 32 32"
                     fill="none"
-                    className="relative w-6 h-6"
+                    className="relative w-6 h-6 group-data-[collapsible=icon]:w-5 group-data-[collapsible=icon]:h-5"
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     <path
@@ -99,12 +100,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
                     />
                   </svg>
                 </div>
-                <div className="flex flex-col gap-0.5 leading-none">
+                <span className="flex flex-col gap-0.5 leading-none truncate group-data-[collapsible=icon]:hidden">
                   <span className="font-semibold tracking-tight">VibeShip</span>
                   <span className="text-xs text-muted-foreground">
                     Ship your vibes
                   </span>
-                </div>
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -118,7 +119,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url || pathname.startsWith(item.url + "/")}>
+                  <SidebarMenuButton asChild isActive={pathname === item.url || pathname.startsWith(item.url + "/")} tooltip={item.title}>
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -130,12 +131,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        <SidebarSeparator className="hidden group-data-[collapsible=icon]:block group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-6" />
+
         <SidebarGroup>
           <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild tooltip="New Project">
                   <Link href="/projects/new">
                     <Plus className="h-4 w-4" />
                     <span>New Project</span>
@@ -143,7 +146,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/import" || pathname.startsWith("/import/")}>
+                <SidebarMenuButton asChild isActive={pathname === "/import" || pathname.startsWith("/import/")} tooltip="Import from GitHub">
                   <Link href="/import">
                     <Github className="h-4 w-4" />
                     <span>Import from GitHub</span>
@@ -154,12 +157,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        <SidebarSeparator className="hidden group-data-[collapsible=icon]:block group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-6" />
+
         <SidebarGroup>
           <SidebarGroupLabel>Learn</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/guide"}>
+                <SidebarMenuButton asChild isActive={pathname === "/guide"} tooltip="Vibe Coding Guide">
                   <Link href="/guide">
                     <Sparkles className="h-4 w-4" />
                     <span>Vibe Coding Guide</span>

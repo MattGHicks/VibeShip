@@ -2,9 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Flame, Pause, Skull, Rocket, ArrowRight } from "lucide-react";
+import { Plus, Flame, Pause, Skull, Rocket, ArrowRight, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import type { Project, ProjectStatus } from "@/types/database";
+import { ProjectPlaceholder } from "@/components/projects/project-placeholder";
 
 const statusConfig: Record<ProjectStatus, { label: string; icon: React.ElementType; color: string }> = {
   active: { label: "Active", icon: Flame, color: "bg-status-active text-white" },
@@ -48,7 +50,10 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <div className="flex items-center gap-3 mb-1">
+            <LayoutDashboard className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          </div>
           <p className="text-muted-foreground">
             Welcome back! Here&apos;s an overview of your projects.
           </p>
@@ -103,11 +108,25 @@ export default async function DashboardPage() {
               const config = statusConfig[project.status];
               const Icon = config.icon;
               return (
-                <Link key={project.id} href={`/projects/${project.id}`}>
-                  <Card className="h-full transition-colors hover:bg-accent/50">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <CardTitle className="text-lg">{project.name}</CardTitle>
+                <Card key={project.id} className="h-full flex flex-col overflow-hidden group py-0 gap-0">
+                  <Link href={`/projects/${project.id}`} className="flex-1">
+                    {project.screenshot_url ? (
+                      <div className="relative aspect-video w-full bg-muted">
+                        <Image
+                          src={project.screenshot_url}
+                          alt={`${project.name} screenshot`}
+                          fill
+                          className="object-cover transition-transform group-hover:scale-105"
+                        />
+                      </div>
+                    ) : (
+                      <ProjectPlaceholder />
+                    )}
+                    <CardHeader className="px-4 py-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                          {project.name}
+                        </CardTitle>
                         <Badge variant="secondary" className={config.color}>
                           <Icon className="mr-1 h-3 w-3" />
                           {config.label}
@@ -118,7 +137,7 @@ export default async function DashboardPage() {
                       </CardDescription>
                     </CardHeader>
                     {project.where_i_left_off && (
-                      <CardContent>
+                      <CardContent className="px-4 pt-0 pb-4">
                         <div className="rounded-lg bg-muted/50 p-3">
                           <p className="text-xs font-medium text-muted-foreground mb-1">
                             Where I left off:
@@ -129,8 +148,8 @@ export default async function DashboardPage() {
                         </div>
                       </CardContent>
                     )}
-                  </Card>
-                </Link>
+                  </Link>
+                </Card>
               );
             })}
           </div>
