@@ -24,6 +24,7 @@ export type ProjectFormData = {
   screenshot_url?: string | null;
   where_i_left_off?: string;
   lessons_learned?: string;
+  target_ship_date?: string | null;
 };
 
 export async function createProject(data: ProjectFormData) {

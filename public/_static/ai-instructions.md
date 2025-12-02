@@ -8,6 +8,8 @@
 2. **Read context:** `.vibe/vibeship.md`
 3. If `.vibe/` missing → run Initial Setup below
 
+**API Response includes:** `next_steps` (checklist with IDs), `resource_links` (reference docs)
+
 ## API Commands
 
 ```bash
@@ -19,6 +21,18 @@ curl -s -X PATCH "$VIBESHIP_ENDPOINT" \
   -H "Authorization: Bearer $VIBESHIP_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"where_i_left_off": "Progress notes", "status": "active"}'
+
+# Add a next step
+curl -s -X PATCH "$VIBESHIP_ENDPOINT" \
+  -H "Authorization: Bearer $VIBESHIP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"add_next_step": "Implement user authentication"}'
+
+# Complete a next step (use ID from GET response)
+curl -s -X PATCH "$VIBESHIP_ENDPOINT" \
+  -H "Authorization: Bearer $VIBESHIP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"complete_next_step": "uuid-from-next-steps-array"}'
 
 # Upload screenshot (macOS)
 screencapture -x /tmp/ss.png && \
@@ -37,6 +51,10 @@ curl -s -X POST "${VIBESHIP_ENDPOINT}/screenshot" \
 | `lessons_learned` | string | Insights from the project |
 | `status` | enum | `active`, `paused`, `shipped`, `graveyard` |
 | `tags` | array | `[{tag_type: "model"|"framework"|"tool", tag_value: "Name"}]` |
+| `add_next_step` | string | Add a checklist item to Next Steps |
+| `complete_next_step` | string | Mark a checklist item complete (pass item ID) |
+| `delete_next_step` | string | Delete a checklist item (pass item ID) |
+| `add_resource_link` | object | `{title: "Name", url: "https://..."}` |
 
 ## Initial Setup
 

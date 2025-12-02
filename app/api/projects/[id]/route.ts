@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import type { Database, Project, ProjectTag, ApiActivityLogInsert } from "@/types/database";
+import type { Database, Project, ProjectTag, ApiActivityLogInsert, ProjectChecklist, ProjectLink } from "@/types/database";
 
 // Create client lazily to avoid build-time errors
 function getSupabase() {
@@ -133,6 +133,24 @@ export async function GET(
     else if (tag.tag_type === "tool") groupedTags.tools.push(tag.tag_value);
   });
 
+  // Fetch checklist items (Next Steps)
+  const { data: checklistData } = await supabase
+    .from("project_checklist")
+    .select("id, content, is_completed, sort_order")
+    .eq("project_id", id)
+    .order("sort_order", { ascending: true });
+
+  const checklist = (checklistData ?? []) as Pick<ProjectChecklist, "id" | "content" | "is_completed" | "sort_order">[];
+
+  // Fetch resource links
+  const { data: linksData } = await supabase
+    .from("project_links")
+    .select("id, title, url, sort_order")
+    .eq("project_id", id)
+    .order("sort_order", { ascending: true });
+
+  const resourceLinks = (linksData ?? []) as Pick<ProjectLink, "id" | "title" | "url" | "sort_order">[];
+
   // Log the read activity
   await logActivity(id, "read", null, request);
 
@@ -156,6 +174,16 @@ export async function GET(
         open_issues: project.github_open_issues,
         language: project.github_language,
       },
+      next_steps: checklist.map(item => ({
+        id: item.id,
+        content: item.content,
+        completed: item.is_completed,
+      })),
+      resource_links: resourceLinks.map(link => ({
+        id: link.id,
+        title: link.title,
+        url: link.url,
+      })),
       created_at: project.created_at,
       updated_at: project.updated_at,
       last_activity_at: project.last_activity_at,
@@ -217,9 +245,20 @@ export async function PATCH(
   const tagsToUpdate = body.tags as Array<{ tag_type: string; tag_value: string }> | undefined;
   let tagsUpdated = false;
 
-  if (Object.keys(updates).length === 0 && !tagsToUpdate) {
+  // Handle next_steps operations
+  const addNextStep = body.add_next_step as string | undefined;
+  const completeNextStep = body.complete_next_step as string | undefined;
+  const deleteNextStep = body.delete_next_step as string | undefined;
+
+  // Handle resource_links operations
+  const addResourceLink = body.add_resource_link as { title: string; url: string } | undefined;
+
+  const hasChecklistOps = addNextStep || completeNextStep || deleteNextStep;
+  const hasLinkOps = addResourceLink;
+
+  if (Object.keys(updates).length === 0 && !tagsToUpdate && !hasChecklistOps && !hasLinkOps) {
     return NextResponse.json(
-      { error: `No valid fields to update. Allowed fields: ${ALLOWED_UPDATE_FIELDS.join(", ")}, tags` },
+      { error: `No valid fields to update. Allowed fields: ${ALLOWED_UPDATE_FIELDS.join(", ")}, tags, add_next_step, complete_next_step, delete_next_step, add_resource_link` },
       { status: 400 }
     );
   }
@@ -291,6 +330,74 @@ export async function PATCH(
 
     tagsUpdated = true;
     changedFields.push("tags");
+  }
+
+  // Handle checklist operations
+  const supabaseForChecklist = getSupabase();
+
+  if (addNextStep && typeof addNextStep === "string") {
+    // Get max sort_order
+    const { data: existing } = await supabaseForChecklist
+      .from("project_checklist")
+      .select("sort_order")
+      .eq("project_id", id)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+
+    const nextOrder = existing && existing.length > 0 ? (existing[0] as { sort_order: number }).sort_order + 1 : 0;
+
+    await supabaseForChecklist
+      .from("project_checklist")
+      .insert({
+        project_id: id,
+        content: addNextStep,
+        sort_order: nextOrder,
+      });
+
+    changedFields.push("add_next_step");
+  }
+
+  if (completeNextStep && typeof completeNextStep === "string") {
+    await supabaseForChecklist
+      .from("project_checklist")
+      .update({ is_completed: true, completed_at: now })
+      .eq("id", completeNextStep)
+      .eq("project_id", id);
+
+    changedFields.push("complete_next_step");
+  }
+
+  if (deleteNextStep && typeof deleteNextStep === "string") {
+    await supabaseForChecklist
+      .from("project_checklist")
+      .delete()
+      .eq("id", deleteNextStep)
+      .eq("project_id", id);
+
+    changedFields.push("delete_next_step");
+  }
+
+  // Handle resource link operations
+  if (addResourceLink && addResourceLink.title && addResourceLink.url) {
+    const { data: existingLinks } = await supabaseForChecklist
+      .from("project_links")
+      .select("sort_order")
+      .eq("project_id", id)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+
+    const nextLinkOrder = existingLinks && existingLinks.length > 0 ? (existingLinks[0] as { sort_order: number }).sort_order + 1 : 0;
+
+    await supabaseForChecklist
+      .from("project_links")
+      .insert({
+        project_id: id,
+        title: addResourceLink.title,
+        url: addResourceLink.url,
+        sort_order: nextLinkOrder,
+      });
+
+    changedFields.push("add_resource_link");
   }
 
   // Log the update activity with details

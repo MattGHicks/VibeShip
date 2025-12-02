@@ -79,6 +79,7 @@ export interface Database {
           last_activity_at: string;
           github_synced_at: string | null;
           api_key: string | null;
+          target_ship_date: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -104,6 +105,7 @@ export interface Database {
           last_activity_at?: string;
           github_synced_at?: string | null;
           api_key?: string | null;
+          target_ship_date?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -129,8 +131,64 @@ export interface Database {
           last_activity_at?: string;
           github_synced_at?: string | null;
           api_key?: string | null;
+          target_ship_date?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      project_checklist: {
+        Row: {
+          id: string;
+          project_id: string;
+          content: string;
+          is_completed: boolean;
+          sort_order: number;
+          created_at: string;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          content: string;
+          is_completed?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          completed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          content?: string;
+          is_completed?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          completed_at?: string | null;
+        };
+      };
+      project_links: {
+        Row: {
+          id: string;
+          project_id: string;
+          title: string;
+          url: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          title: string;
+          url: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          title?: string;
+          url?: string;
+          sort_order?: number;
+          created_at?: string;
         };
       };
       api_activity_log: {
@@ -270,3 +328,11 @@ export type TagCatalog = Database["public"]["Tables"]["tags_catalog"]["Row"];
 
 export type ApiActivityLog = Database["public"]["Tables"]["api_activity_log"]["Row"];
 export type ApiActivityLogInsert = Database["public"]["Tables"]["api_activity_log"]["Insert"];
+
+export type ProjectChecklist = Database["public"]["Tables"]["project_checklist"]["Row"];
+export type ProjectChecklistInsert = Database["public"]["Tables"]["project_checklist"]["Insert"];
+export type ProjectChecklistUpdate = Database["public"]["Tables"]["project_checklist"]["Update"];
+
+export type ProjectLink = Database["public"]["Tables"]["project_links"]["Row"];
+export type ProjectLinkInsert = Database["public"]["Tables"]["project_links"]["Insert"];
+export type ProjectLinkUpdate = Database["public"]["Tables"]["project_links"]["Update"];

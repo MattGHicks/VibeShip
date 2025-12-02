@@ -9,7 +9,11 @@ import { DiscoverableToggle } from "@/components/projects/discoverable-toggle";
 import { ScreenshotUpload } from "@/components/projects/screenshot-upload";
 import { ProjectPlaceholder } from "@/components/projects/project-placeholder";
 import { EditableText, EditableTextarea, EditableDescription, EditableLinks, InlineTagEditor } from "@/components/inline-edit";
-import { Calendar, Clock, Star, ImagePlus, Github, GitFork, CircleDot, RefreshCw, ExternalLink, Lightbulb, MapPin, Trash2 } from "lucide-react";
+import { Calendar, Clock, Star, ImagePlus, Github, GitFork, CircleDot, RefreshCw, ExternalLink, Lightbulb, MapPin, Trash2, Activity, ListTodo } from "lucide-react";
+import { ShipDateGoal } from "@/components/projects/ship-date-goal";
+import { ActivityTimeline } from "@/components/projects/activity-timeline";
+import { NextStepsChecklist } from "@/components/projects/next-steps-checklist";
+import { ResourceLinks } from "@/components/projects/resource-links";
 import Image from "next/image";
 import { updateProject } from "@/lib/actions/projects";
 import { toggleGitHubAutosync } from "@/lib/actions/github";
@@ -49,7 +53,27 @@ export function InlineProjectPage({ project: initialProject, tags }: InlineProje
     });
   };
 
+  const getDaysSinceActivity = (date: string) => {
+    const lastActivity = new Date(date);
+    const now = new Date();
+    const diffTime = now.getTime() - lastActivity.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getActivityStatus = (date: string) => {
+    const days = getDaysSinceActivity(date);
+    if (days === 0) return { text: "Active today", color: "text-status-shipped", bg: "bg-status-shipped/10" };
+    if (days === 1) return { text: "1 day ago", color: "text-status-shipped", bg: "bg-status-shipped/10" };
+    if (days <= 3) return { text: `${days} days ago`, color: "text-status-shipped", bg: "bg-status-shipped/10" };
+    if (days <= 7) return { text: `${days} days ago`, color: "text-status-active", bg: "bg-status-active/10" };
+    if (days <= 14) return { text: `${days} days ago`, color: "text-amber-500", bg: "bg-amber-500/10" };
+    if (days <= 30) return { text: `${days} days ago`, color: "text-status-paused", bg: "bg-status-paused/10" };
+    return { text: `${days} days ago`, color: "text-status-graveyard", bg: "bg-status-graveyard/10" };
+  };
+
   const hasGitHub = !!project.github_repo_id;
+  const activityStatus = getActivityStatus(project.last_activity_at);
 
   return (
     <div className="space-y-6 pb-8">
@@ -81,7 +105,7 @@ export function InlineProjectPage({ project: initialProject, tags }: InlineProje
               isPublic={project.is_public}
               showLabel
             />
-            <StatusSwitcher projectId={project.id} currentStatus={project.status} />
+            <StatusSwitcher projectId={project.id} currentStatus={project.status} size="lg" />
           </div>
         </div>
 
@@ -89,15 +113,27 @@ export function InlineProjectPage({ project: initialProject, tags }: InlineProje
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <InlineTagEditor projectId={project.id} initialTags={tags} />
 
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
               <Calendar className="h-3.5 w-3.5" />
               {formatDate(project.created_at)}
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className={cn(
+              "flex items-center gap-1.5 px-2 py-0.5 rounded-full font-medium",
+              activityStatus.color,
+              activityStatus.bg
+            )}>
               <Clock className="h-3.5 w-3.5" />
-              {formatDate(project.last_activity_at)}
+              {activityStatus.text}
             </span>
+          </div>
+
+          <div className="group">
+            <ShipDateGoal
+              projectId={project.id}
+              targetDate={project.target_ship_date}
+              status={project.status}
+            />
           </div>
         </div>
       </header>
@@ -193,19 +229,22 @@ export function InlineProjectPage({ project: initialProject, tags }: InlineProje
             ROW 2: Links + GitHub Stats + Lessons Learned
             ───────────────────────────────────────────────────────────────── */}
 
-        {/* Links Card */}
+        {/* Links & Resources Card */}
         <BentoCard className={cn(
           "lg:col-span-6",
           hasGitHub ? "xl:col-span-4" : "xl:col-span-6"
         )} delay={200}>
-          <CardHeader icon={ExternalLink}>Links</CardHeader>
-          <div className="mt-3">
+          <CardHeader icon={ExternalLink}>Links & Resources</CardHeader>
+          <div className="mt-3 space-y-4">
             <EditableLinks
               githubUrl={project.github_repo_url || ""}
               liveUrl={project.live_url || ""}
               onSaveGithub={(value) => updateField("github_repo_url", value)}
               onSaveLive={(value) => updateField("live_url", value)}
             />
+            <div className="border-t border-border/30 pt-3">
+              <ResourceLinks projectId={project.id} />
+            </div>
           </div>
         </BentoCard>
 
@@ -218,7 +257,7 @@ export function InlineProjectPage({ project: initialProject, tags }: InlineProje
 
         {/* Lessons Learned */}
         <BentoCard className={cn(
-          "lg:col-span-12",
+          "lg:col-span-6",
           hasGitHub ? "xl:col-span-4" : "xl:col-span-6"
         )} delay={400}>
           <CardHeader icon={Lightbulb} iconColor="text-status-shipped">
@@ -232,6 +271,35 @@ export function InlineProjectPage({ project: initialProject, tags }: InlineProje
               emptyStateMessage="Click to document what you learned..."
               minRows={3}
             />
+          </div>
+        </BentoCard>
+
+        {/* Activity Timeline */}
+        <BentoCard className={cn(
+          "lg:col-span-6",
+          hasGitHub ? "xl:col-span-4" : "xl:col-span-6"
+        )} delay={450}>
+          <CardHeader icon={Activity} iconColor="text-blue-500">
+            AI Activity
+          </CardHeader>
+          <div className="mt-3">
+            <ActivityTimeline
+              projectId={project.id}
+              hasApiKey={!!project.api_key}
+            />
+          </div>
+        </BentoCard>
+
+        {/* Next Steps Checklist */}
+        <BentoCard className={cn(
+          "lg:col-span-6",
+          hasGitHub ? "xl:col-span-8" : "xl:col-span-6"
+        )} delay={475}>
+          <CardHeader icon={ListTodo} iconColor="text-primary">
+            Next Steps
+          </CardHeader>
+          <div className="mt-3">
+            <NextStepsChecklist projectId={project.id} />
           </div>
         </BentoCard>
       </div>
