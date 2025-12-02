@@ -1,6 +1,6 @@
 # VibeShip Project Context
 
-> Last synced: 2025-12-02T00:44:58Z
+> Last synced: 2025-12-02T01:30:00Z
 > See INSTRUCTIONS.md for how AI should work with this project.
 
 ## Project: VibeShip
@@ -19,22 +19,21 @@ VibeShip is a project tracker for indie hackers and vibe coders. Import from Git
 
 ## Where I Left Off
 
-Shipped major project page enhancements:
+Fixed auth redirect bug and improved UI consistency across dashboard:
 
-**New Features:**
-- Next Steps Checklist - add, complete, delete checklist items from project page
-- Resource Links - manage project reference docs and links
-- Activity Timeline - shows recent API activity for the project
-- Ship Date Goal - countdown to target ship date
-- Combined Links & Resources card for cleaner layout
+**Auth Fix:**
+- Authenticated users now redirect from landing page to dashboard
 
-**API Enhancements:**
-- GET returns next_steps and resource_links arrays
-- PATCH supports add_next_step, complete_next_step, delete_next_step, add_resource_link
-- AI can now manage checklist and links programmatically
+**UI Consistency Improvements:**
+- Added header icons to Dashboard, Projects, New Project, and Import pages
+- Dashboard project cards now match Projects page design with screenshots
+- Widened New Project page for better form layout
 
-**Database:**
-- Added project_checklist and project_links tables with RLS policies
+**Sidebar Enhancements:**
+- Changed from offcanvas to icon-collapse mode
+- Centered icons with proper sizing when collapsed
+- Added separators between icon groups (only visible when collapsed)
+- All menu items now have tooltips
 
 All changes pushed and deployed to production.
 
@@ -50,6 +49,9 @@ All changes pushed and deployed to production.
 - Extending existing API endpoints (PATCH) is cleaner than creating new endpoints for related operations
 - When Supabase CLI is slow/stuck, executing SQL directly in the dashboard SQL Editor is a reliable workaround
 - Optimistic UI updates (updating state before server confirms) provide snappier user experience for checklist operations
+- shadcn/ui sidebar `collapsible="icon"` mode is better UX than `offcanvas` - keeps navigation visible
+- Use `group-data-[collapsible=icon]:` Tailwind prefix for conditional collapsed styles
+- Header icons create visual consistency across dashboard pages - follow the pattern established by existing pages
 
 ## Tech Stack
 
