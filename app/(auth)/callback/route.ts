@@ -26,6 +26,17 @@ export async function GET(request: Request) {
   }
 
   if (code) {
+    // Debug: Log env vars (partial for security)
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    console.log("[Auth Callback] Env check:", {
+      hasUrl: !!url,
+      urlStart: url?.substring(0, 30),
+      hasKey: !!key,
+      keyStart: key?.substring(0, 20),
+      keyEnd: key?.substring(key?.length - 10),
+    });
+
     const supabase = await createClient();
 
     console.log("[Auth Callback] Attempting code exchange with code:", code.substring(0, 8) + "...");
