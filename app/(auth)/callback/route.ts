@@ -8,49 +8,18 @@ export async function GET(request: Request) {
   const error_description = searchParams.get("error_description");
   const redirectTo = searchParams.get("redirectTo") || "/dashboard";
 
-  // Log incoming request details
-  console.log("[Auth Callback] Request received:", {
-    origin,
-    hasCode: !!code,
-    error_param,
-    error_description,
-    redirectTo,
-  });
-
   // If OAuth provider returned an error
   if (error_param) {
-    console.error("[Auth Callback] OAuth error:", error_param, error_description);
     return NextResponse.redirect(
       `${origin}/login?error=${encodeURIComponent(error_param)}&message=${encodeURIComponent(error_description || "")}`
     );
   }
 
   if (code) {
-    // Debug: Log env vars (partial for security)
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    console.log("[Auth Callback] Env check:", {
-      hasUrl: !!url,
-      urlStart: url?.substring(0, 30),
-      hasKey: !!key,
-      keyStart: key?.substring(0, 20),
-      keyEnd: key?.substring(key?.length - 10),
-    });
-
     const supabase = await createClient();
-
-    console.log("[Auth Callback] Attempting code exchange with code:", code.substring(0, 8) + "...");
-
     const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    console.log("[Auth Callback] Code exchange result:", {
-      hasSession: !!sessionData?.session,
-      hasUser: !!sessionData?.user,
-      error: error ? { message: error.message, status: error.status, name: error.name } : null,
-    });
-
     if (error) {
-      console.error("[Auth Callback] Exchange error details:", JSON.stringify(error, null, 2));
       return NextResponse.redirect(
         `${origin}/login?error=exchange_failed&message=${encodeURIComponent(error.message || "Unknown exchange error")}`
       );
@@ -97,7 +66,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // Auth error, redirect to login with error
-  console.error("[Auth Callback] No code provided or exchange failed");
-  return NextResponse.redirect(`${origin}/login?error=auth_error&message=no_code_or_exchange_failed`);
+  // No code provided
+  return NextResponse.redirect(`${origin}/login?error=auth_error&message=no_code_provided`);
 }
