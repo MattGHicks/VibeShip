@@ -27,12 +27,23 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
+
+    console.log("[Auth Callback] Attempting code exchange with code:", code.substring(0, 8) + "...");
+
     const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
 
     console.log("[Auth Callback] Code exchange result:", {
       hasSession: !!sessionData?.session,
-      error: error?.message,
+      hasUser: !!sessionData?.user,
+      error: error ? { message: error.message, status: error.status, name: error.name } : null,
     });
+
+    if (error) {
+      console.error("[Auth Callback] Exchange error details:", JSON.stringify(error, null, 2));
+      return NextResponse.redirect(
+        `${origin}/login?error=exchange_failed&message=${encodeURIComponent(error.message || "Unknown exchange error")}`
+      );
+    }
 
     if (!error && sessionData.session) {
       const { user } = sessionData.session;
