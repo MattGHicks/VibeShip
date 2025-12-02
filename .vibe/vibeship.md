@@ -1,6 +1,6 @@
 # VibeShip Project Context
 
-> Last synced: 2025-12-02T01:30:00Z
+> Last synced: 2025-12-02T02:30:00Z
 > See INSTRUCTIONS.md for how AI should work with this project.
 
 ## Project: VibeShip
@@ -19,21 +19,21 @@ VibeShip is a project tracker for indie hackers and vibe coders. Import from Git
 
 ## Where I Left Off
 
-Fixed auth redirect bug and improved UI consistency across dashboard:
+Fixed production OAuth authentication - was failing with "Invalid API key" error:
 
-**Auth Fix:**
-- Authenticated users now redirect from landing page to dashboard
+**Root Cause:**
+- Vercel environment variables weren't properly set for production
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` needed to be re-added in Vercel dashboard
 
-**UI Consistency Improvements:**
-- Added header icons to Dashboard, Projects, New Project, and Import pages
-- Dashboard project cards now match Projects page design with screenshots
-- Widened New Project page for better form layout
+**Fixes Applied:**
+- Updated Vercel env vars with correct Supabase anon key
+- Excluded `/callback` route from middleware to prevent PKCE interference
+- Added `http://localhost:3000/**` to Supabase redirect URLs for local dev
+- Cleaned up debug logging from callback route after fixing
 
-**Sidebar Enhancements:**
-- Changed from offcanvas to icon-collapse mode
-- Centered icons with proper sizing when collapsed
-- Added separators between icon groups (only visible when collapsed)
-- All menu items now have tooltips
+**Auth Flow Now Working:**
+- Production: https://vibe-ship.vercel.app → GitHub OAuth → dashboard
+- Local dev: http://localhost:3000 → GitHub OAuth → localhost dashboard
 
 All changes pushed and deployed to production.
 
@@ -52,6 +52,9 @@ All changes pushed and deployed to production.
 - shadcn/ui sidebar `collapsible="icon"` mode is better UX than `offcanvas` - keeps navigation visible
 - Use `group-data-[collapsible=icon]:` Tailwind prefix for conditional collapsed styles
 - Header icons create visual consistency across dashboard pages - follow the pattern established by existing pages
+- Vercel env vars must have **Production** checkbox enabled - delete and re-add if values seem correct but auth fails
+- Supabase redirect URLs need `http://localhost:3000/**` wildcard for local OAuth to work
+- Exclude auth callback routes from middleware to prevent PKCE flow interference
 
 ## Tech Stack
 
