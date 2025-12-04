@@ -127,6 +127,7 @@ export function WebhookToggle({
               {/* Quick Instructions */}
               <div className="text-xs text-muted-foreground space-y-1">
                 <p><strong>Content type:</strong> application/json</p>
+                <p><strong>Secret:</strong> Use your <code className="px-1 py-0.5 bg-background rounded">GITHUB_WEBHOOK_SECRET</code> from Vercel</p>
                 <p><strong>Events:</strong> Pushes, Releases, Stars, Forks</p>
               </div>
 
