@@ -1,6 +1,6 @@
 # VibeShip Project Context
 
-> Last synced: 2025-12-02T02:21:00Z
+> Last synced: 2025-12-04T22:55:00Z
 > See INSTRUCTIONS.md for how AI should work with this project.
 
 ## Project: VibeShip
@@ -19,46 +19,54 @@ VibeShip is a project tracker for indie hackers and vibe coders. Import from Git
 
 ## Where I Left Off
 
-Fixed production OAuth and API authentication issues:
+Implemented Phase 3 features - Activity & Real-time Features:
 
-**Root Cause:**
-- Vercel environment variables weren't properly set for production
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` needed to be re-added in Vercel dashboard
-- `SUPABASE_SERVICE_ROLE_KEY` was missing (API returned 500)
+### 1. Activity Timeline
+- Created `lib/actions/activity.ts` with `logUserActivity()`, `getRecentActivity()`, `getAllProjectActivity()`
+- Added activity logging to all project mutations (create, update, status change, visibility)
+- Dashboard now shows "Recent Activity" feed across all projects
+- Project pages show detailed activity timeline with icons for each action type
+- Supports user actions, AI actions, and GitHub webhook events
 
-**Fixes Applied:**
-- Updated Vercel env vars with correct Supabase anon key
-- Added `SUPABASE_SERVICE_ROLE_KEY` for API routes
-- Excluded `/callback` route from middleware to prevent PKCE interference
-- Added `http://localhost:3000/**` to Supabase redirect URLs for local dev
-- Cleaned up debug logging from callback route after fixing
+### 2. Rich Notes (Markdown)
+- Installed `react-markdown` and `remark-gfm` packages
+- Created `components/ui/markdown-display.tsx` for rendering markdown
+- Created `components/ui/markdown-editor.tsx` with Edit/Preview toggle
+- "Where I Left Off" and "Lessons Learned" fields now support full markdown
+- Inline editing shows rendered markdown in view mode
 
-**Auth Flow Now Working:**
-- Production: https://vibe-ship.vercel.app → GitHub OAuth → dashboard
-- Local dev: http://localhost:3000 → GitHub OAuth → localhost dashboard
-- API: GET and PATCH operations working for project context sync
+### 3. GitHub Webhooks (Partial)
+- Created `lib/github-webhook.ts` with signature verification
+- Created `app/api/webhooks/github/route.ts` to receive webhook events
+- Created `lib/actions/webhooks.ts` for toggle functionality
+- Created `components/projects/webhook-toggle.tsx` UI component
+- Supports push, release, star, and fork events
+- **Requires migration**: Run SQL in Supabase dashboard to add columns
 
-All changes pushed and deployed to production.
+### Migration Required
+Run this SQL in Supabase SQL Editor:
+```sql
+ALTER TABLE projects
+ADD COLUMN IF NOT EXISTS github_webhook_id bigint,
+ADD COLUMN IF NOT EXISTS github_webhook_enabled boolean DEFAULT false;
+```
 
 ## Next Steps
 
-- [ ] Test new checklist and resource links features in production
-- [ ] Add drag-and-drop reordering for checklist items
-- [ ] Continue Phase 2 features (discover page enhancements, social features)
+- [ ] Run webhook migration in Supabase dashboard
+- [ ] Add GITHUB_WEBHOOK_SECRET env var in Vercel for production webhooks
+- [ ] Test webhook functionality end-to-end
+- [ ] Phase 4: Pro features, social features
 
 ## Lessons Learned
 
-- Combining related UI cards (Links + Resources) reduces visual clutter and makes better use of space
-- Extending existing API endpoints (PATCH) is cleaner than creating new endpoints for related operations
-- When Supabase CLI is slow/stuck, executing SQL directly in the dashboard SQL Editor is a reliable workaround
-- Optimistic UI updates (updating state before server confirms) provide snappier user experience for checklist operations
-- shadcn/ui sidebar `collapsible="icon"` mode is better UX than `offcanvas` - keeps navigation visible
-- Use `group-data-[collapsible=icon]:` Tailwind prefix for conditional collapsed styles
-- Header icons create visual consistency across dashboard pages - follow the pattern established by existing pages
-- Vercel env vars must have **Production** checkbox enabled - delete and re-add if values seem correct but auth fails
-- Supabase redirect URLs need `http://localhost:3000/**` wildcard for local OAuth to work
-- Exclude auth callback routes from middleware to prevent PKCE flow interference
-- API routes need `SUPABASE_SERVICE_ROLE_KEY` (not anon key) for database access
+- Server Actions in Next.js must be async even for simple return statements
+- Supabase REST API doesn't expose arbitrary SQL execution - use dashboard SQL Editor for migrations
+- When Supabase CLI db push is slow, mark conflicting migrations as "applied" with `supabase migration repair`
+- Activity logging pattern: insert to `api_activity_log` + update `last_activity_at` on projects
+- Cast `Record<string, unknown>` to Supabase `Json` type to satisfy TypeScript
+- GitHub webhook signature uses HMAC SHA-256 with `sha256=` prefix
+- `remark-gfm` plugin enables GitHub Flavored Markdown (tables, strikethrough, task lists)
 
 ## Tech Stack
 

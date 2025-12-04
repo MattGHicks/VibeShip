@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Pencil, Check, Loader2, Expand } from "lucide-react";
+import { Pencil, Check, Loader2, Expand, Eye, Edit3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MarkdownDisplay } from "@/components/ui/markdown-display";
 import {
   Dialog,
   DialogContent,
@@ -155,7 +156,7 @@ export function EditableTextarea({
           disabled={isSaving}
         />
         <p className="text-xs text-muted-foreground">
-          Press <kbd className="px-1 py-0.5 rounded bg-muted text-[10px]">Cmd+Enter</kbd> to save, <kbd className="px-1 py-0.5 rounded bg-muted text-[10px]">Esc</kbd> to cancel
+          <kbd className="px-1 py-0.5 rounded bg-muted text-[10px]">Cmd+Enter</kbd> to save · <kbd className="px-1 py-0.5 rounded bg-muted text-[10px]">Esc</kbd> to cancel · Supports **markdown**
         </p>
       </div>
     );
@@ -203,14 +204,9 @@ export function EditableTextarea({
               "border border-transparent hover:border-dashed hover:border-muted-foreground/30"
             )}
           >
-            <p
-              className={cn(
-                "text-sm whitespace-pre-wrap leading-relaxed text-foreground/90",
-                needsTruncation && "line-clamp-9"
-              )}
-            >
-              {value}
-            </p>
+            <div className={cn(needsTruncation && "line-clamp-9")}>
+              <MarkdownDisplay content={value} />
+            </div>
           </div>
           {needsTruncation && (
             <button
@@ -235,9 +231,7 @@ export function EditableTextarea({
                 </DialogTitle>
               </DialogHeader>
               <div className="flex-1 overflow-y-auto pr-2">
-                <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground/90">
-                  {value}
-                </p>
+                <MarkdownDisplay content={value} />
               </div>
               <div className="pt-4 border-t border-border/30 flex justify-end">
                 <button

@@ -14,6 +14,7 @@ import { ShipDateGoal } from "@/components/projects/ship-date-goal";
 import { ActivityTimeline } from "@/components/projects/activity-timeline";
 import { NextStepsChecklist } from "@/components/projects/next-steps-checklist";
 import { ResourceLinks } from "@/components/projects/resource-links";
+import { WebhookToggle } from "@/components/projects/webhook-toggle";
 import Image from "next/image";
 import { updateProject } from "@/lib/actions/projects";
 import { toggleGitHubAutosync } from "@/lib/actions/github";
@@ -458,6 +459,13 @@ function GitHubPanel({ project }: { project: Project }) {
             disabled={isToggling}
           />
         </div>
+
+        {/* Webhook Toggle */}
+        <WebhookToggle
+          projectId={project.id}
+          githubRepoUrl={project.github_repo_url}
+          webhookEnabled={project.github_webhook_enabled ?? false}
+        />
       </div>
     </>
   );

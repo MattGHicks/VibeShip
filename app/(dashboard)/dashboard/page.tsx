@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Project, ProjectStatus } from "@/types/database";
 import { ProjectPlaceholder } from "@/components/projects/project-placeholder";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
 
 const statusConfig: Record<ProjectStatus, { label: string; icon: React.ElementType; color: string }> = {
   active: { label: "Active", icon: Flame, color: "bg-status-active text-white" },
@@ -90,90 +91,98 @@ export default async function DashboardPage() {
         })}
       </div>
 
-      {/* Recent Projects */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Recent Projects</h2>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/projects">
-              View all
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+      {/* Main Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Recent Projects - Takes 2 columns */}
+        <div className="lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Recent Projects</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/projects">
+                View all
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          {projects && projects.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {projects.map((project) => {
+                const config = statusConfig[project.status];
+                const Icon = config.icon;
+                return (
+                  <Card key={project.id} className="h-full flex flex-col overflow-hidden group py-0 gap-0">
+                    <Link href={`/projects/${project.id}`} className="flex-1">
+                      {project.screenshot_url ? (
+                        <div className="relative aspect-video w-full bg-muted">
+                          <Image
+                            src={project.screenshot_url}
+                            alt={`${project.name} screenshot`}
+                            fill
+                            className="object-cover transition-transform group-hover:scale-105"
+                          />
+                        </div>
+                      ) : (
+                        <ProjectPlaceholder />
+                      )}
+                      <CardHeader className="px-4 py-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                            {project.name}
+                          </CardTitle>
+                          <Badge variant="secondary" className={config.color}>
+                            <Icon className="mr-1 h-3 w-3" />
+                            {config.label}
+                          </Badge>
+                        </div>
+                        <CardDescription className="line-clamp-2">
+                          {project.description || "No description"}
+                        </CardDescription>
+                      </CardHeader>
+                      {project.where_i_left_off && (
+                        <CardContent className="px-4 pt-0 pb-4">
+                          <div className="rounded-lg bg-muted/50 p-3">
+                            <p className="text-xs font-medium text-muted-foreground mb-1">
+                              Where I left off:
+                            </p>
+                            <p className="text-sm line-clamp-2">
+                              {project.where_i_left_off}
+                            </p>
+                          </div>
+                        </CardContent>
+                      )}
+                    </Link>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <Plus className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  Create your first project or import from GitHub to get started.
+                </p>
+                <div className="flex gap-2">
+                  <Button asChild>
+                    <Link href="/projects/new">Create Project</Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/import">Import from GitHub</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        {projects && projects.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => {
-              const config = statusConfig[project.status];
-              const Icon = config.icon;
-              return (
-                <Card key={project.id} className="h-full flex flex-col overflow-hidden group py-0 gap-0">
-                  <Link href={`/projects/${project.id}`} className="flex-1">
-                    {project.screenshot_url ? (
-                      <div className="relative aspect-video w-full bg-muted">
-                        <Image
-                          src={project.screenshot_url}
-                          alt={`${project.name} screenshot`}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                        />
-                      </div>
-                    ) : (
-                      <ProjectPlaceholder />
-                    )}
-                    <CardHeader className="px-4 py-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-lg line-clamp-1 group-hover:text-primary transition-colors">
-                          {project.name}
-                        </CardTitle>
-                        <Badge variant="secondary" className={config.color}>
-                          <Icon className="mr-1 h-3 w-3" />
-                          {config.label}
-                        </Badge>
-                      </div>
-                      <CardDescription className="line-clamp-2">
-                        {project.description || "No description"}
-                      </CardDescription>
-                    </CardHeader>
-                    {project.where_i_left_off && (
-                      <CardContent className="px-4 pt-0 pb-4">
-                        <div className="rounded-lg bg-muted/50 p-3">
-                          <p className="text-xs font-medium text-muted-foreground mb-1">
-                            Where I left off:
-                          </p>
-                          <p className="text-sm line-clamp-2">
-                            {project.where_i_left_off}
-                          </p>
-                        </div>
-                      </CardContent>
-                    )}
-                  </Link>
-                </Card>
-              );
-            })}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="rounded-full bg-muted p-4 mb-4">
-                <Plus className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
-              <p className="text-muted-foreground text-center mb-4">
-                Create your first project or import from GitHub to get started.
-              </p>
-              <div className="flex gap-2">
-                <Button asChild>
-                  <Link href="/projects/new">Create Project</Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/import">Import from GitHub</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Activity Feed - Takes 1 column */}
+        <div className="lg:col-span-1">
+          <ActivityFeed />
+        </div>
       </div>
     </div>
   );

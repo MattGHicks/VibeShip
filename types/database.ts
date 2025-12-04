@@ -72,6 +72,8 @@ export interface Database {
           github_open_issues: number;
           github_language: string | null;
           github_autosync: boolean;
+          github_webhook_id: number | null;
+          github_webhook_enabled: boolean;
           live_url: string | null;
           screenshot_url: string | null;
           where_i_left_off: string | null;
@@ -98,6 +100,8 @@ export interface Database {
           github_open_issues?: number;
           github_language?: string | null;
           github_autosync?: boolean;
+          github_webhook_id?: number | null;
+          github_webhook_enabled?: boolean;
           live_url?: string | null;
           screenshot_url?: string | null;
           where_i_left_off?: string | null;
@@ -124,6 +128,8 @@ export interface Database {
           github_open_issues?: number;
           github_language?: string | null;
           github_autosync?: boolean;
+          github_webhook_id?: number | null;
+          github_webhook_enabled?: boolean;
           live_url?: string | null;
           screenshot_url?: string | null;
           where_i_left_off?: string | null;

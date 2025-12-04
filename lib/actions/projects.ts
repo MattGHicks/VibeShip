@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ProjectStatus } from "@/types/database";
+import { logUserActivity } from "./activity";
 
 function slugify(text: string): string {
   return text
@@ -81,6 +82,12 @@ export async function createProject(data: ProjectFormData) {
     return { error: error.message };
   }
 
+  // Log project creation activity
+  await logUserActivity(project.id, "project_created", {
+    name: data.name,
+    status: data.status,
+  });
+
   revalidatePath("/dashboard");
   revalidatePath("/projects");
   redirect(`/projects/${project.id}`);
@@ -102,12 +109,21 @@ export async function updateProject(id: string, data: Partial<ProjectFormData>) 
     .update({
       ...data,
       updated_at: new Date().toISOString(),
+      last_activity_at: new Date().toISOString(),
     })
     .eq("id", id)
     .eq("user_id", user.id);
 
   if (error) {
     return { error: error.message };
+  }
+
+  // Log activity based on what was updated
+  const updatedFields = Object.keys(data);
+  if (updatedFields.includes("where_i_left_off") || updatedFields.includes("lessons_learned")) {
+    await logUserActivity(id, "notes_updated", { fields: updatedFields });
+  } else if (updatedFields.length > 0) {
+    await logUserActivity(id, "project_edited", { fields: updatedFields });
   }
 
   revalidatePath("/dashboard");
@@ -168,6 +184,9 @@ export async function updateProjectStatus(id: string, status: ProjectStatus) {
     return { error: error.message };
   }
 
+  // Log status change activity
+  await logUserActivity(id, "status_changed", { status });
+
   revalidatePath("/dashboard");
   revalidatePath("/projects");
   revalidatePath(`/projects/${id}`);
@@ -191,6 +210,7 @@ export async function toggleProjectVisibility(id: string, isPublic: boolean) {
     .update({
       is_public: isPublic,
       updated_at: new Date().toISOString(),
+      last_activity_at: new Date().toISOString(),
     })
     .eq("id", id)
     .eq("user_id", user.id);
@@ -198,6 +218,11 @@ export async function toggleProjectVisibility(id: string, isPublic: boolean) {
   if (error) {
     return { error: error.message };
   }
+
+  // Log visibility change activity
+  await logUserActivity(id, "visibility_changed", {
+    is_public: isPublic,
+  });
 
   revalidatePath("/dashboard");
   revalidatePath("/projects");

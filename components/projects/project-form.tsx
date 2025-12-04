@@ -19,6 +19,7 @@ import { createProject, updateProject, type ProjectFormData } from "@/lib/action
 import { getProjectTags, updateProjectTags, type TagType } from "@/lib/actions/tags";
 import { TagSelector } from "@/components/projects/tag-selector";
 import { ScreenshotUpload } from "@/components/projects/screenshot-upload";
+import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import type { Project, ProjectStatus } from "@/types/database";
 
 const statusOptions: { value: ProjectStatus; label: string; icon: React.ElementType; description: string }[] = [
@@ -263,29 +264,39 @@ export function ProjectForm({ project, mode }: ProjectFormProps) {
       <Card>
         <CardHeader>
           <CardTitle>Notes</CardTitle>
-          <CardDescription>Track where you left off and what you learned</CardDescription>
+          <CardDescription>Track where you left off and what you learned. Supports markdown formatting.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="where_i_left_off">Where I Left Off</Label>
-            <Textarea
-              id="where_i_left_off"
-              value={formData.where_i_left_off}
-              onChange={(e) => setFormData({ ...formData, where_i_left_off: e.target.value })}
-              placeholder="What were you working on last? What's the next step?"
-              rows={3}
+            <MarkdownEditor
+              value={formData.where_i_left_off || ""}
+              onChange={(value) => setFormData({ ...formData, where_i_left_off: value })}
+              placeholder="What were you working on last? What's the next step?
+
+Use markdown:
+- [ ] Todo item
+- [x] Completed item
+- **Bold** for emphasis"
+              minRows={4}
+              maxRows={10}
             />
           </div>
 
           {(formData.status === "graveyard" || formData.status === "shipped") && (
             <div className="space-y-2">
               <Label htmlFor="lessons_learned">Lessons Learned</Label>
-              <Textarea
-                id="lessons_learned"
-                value={formData.lessons_learned}
-                onChange={(e) => setFormData({ ...formData, lessons_learned: e.target.value })}
-                placeholder="What did you learn from this project?"
-                rows={3}
+              <MarkdownEditor
+                value={formData.lessons_learned || ""}
+                onChange={(value) => setFormData({ ...formData, lessons_learned: value })}
+                placeholder="What did you learn from this project?
+
+Use markdown to organize your thoughts:
+## What Worked
+## What Didn't
+## Key Takeaways"
+                minRows={4}
+                maxRows={10}
               />
             </div>
           )}

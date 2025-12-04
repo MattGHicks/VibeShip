@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { logUserActivity } from "./activity";
 
 interface GitHubRepo {
   id: number;
@@ -177,6 +178,12 @@ export async function syncGitHubProject(projectId: string) {
       return { error: updateError.message };
     }
 
+    // Log GitHub sync activity
+    await logUserActivity(projectId, "github_synced", {
+      stars: repo.stargazers_count,
+      forks: repo.forks_count,
+    });
+
     revalidatePath(`/projects/${projectId}`);
     revalidatePath("/projects");
     revalidatePath("/dashboard");
@@ -317,6 +324,13 @@ export async function importGitHubRepo(repoId: number) {
     if (createError) {
       return { error: createError.message };
     }
+
+    // Log project creation from GitHub import
+    await logUserActivity(project.id, "project_created", {
+      name: repo.name,
+      source: "github_import",
+      github_repo_id: repo.id,
+    });
 
     // Auto-add language as a tag if present
     if (repo.language) {

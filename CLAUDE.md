@@ -386,10 +386,22 @@ Files in `public/_static/` are served directly and excluded from middleware via 
 - [x] Hosted AI instructions (auto-updating across projects)
 - [x] API activity logging
 
-### Phase 3: Future Features
+### Phase 3: Activity & Real-time Features - COMPLETED
 
-- **Activity Timeline** - Track project activity, "days since last activity"
-- **Rich Notes** - Markdown editor, todo lists in "Where I Left Off"
-- **GitHub Webhooks** - Real-time commit tracking
+- [x] Activity Timeline - Track project activity, "days since last activity"
+  - User action logging (status changes, notes updates, visibility changes)
+  - Dashboard activity feed across all projects
+  - AI and webhook activity tracking
+- [x] Rich Notes - Markdown editor, todo lists in "Where I Left Off"
+  - Markdown editor with live preview
+  - Markdown rendering in project views
+  - GitHub Flavored Markdown support
+- [x] GitHub Webhooks - Real-time commit tracking
+  - Webhook endpoint with signature validation
+  - Push, release, star, and fork event tracking
+  - Toggle UI in project settings
+
+### Phase 4: Future Features
+
 - **Pro Features** - Stripe integration, unlimited projects, analytics
 - **Social Features** - Follow developers, activity feed, comments
